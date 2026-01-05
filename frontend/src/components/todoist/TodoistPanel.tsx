@@ -4,6 +4,7 @@ import { TodoistTask, TaskCompletionEvent } from '../../types';
 import { fetchTasks, completeTask, createTask, categorizeTasks } from '../../api/todoist';
 import { TaskCompletionRepository } from '../../db';
 import { getDateKey } from '../../utils/dateUtils';
+import { useVault } from '../../state/VaultContext';
 
 interface TodoistPanelProps {
   onTaskSelect: (task: TodoistTask) => void;
@@ -56,6 +57,8 @@ export function TodoistPanel({
   selectedTaskId,
   onTaskCompleted,
 }: TodoistPanelProps) {
+  const { getToken } = useVault();
+
   const [tasks, setTasks] = useState<TodoistTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,18 +66,26 @@ export function TodoistPanel({
   const [newTaskContent, setNewTaskContent] = useState('');
 
   const loadTasks = useCallback(async () => {
+    const token = getToken('todoist');
+    if (!token) {
+      setError('Add your Todoist API token in Settings to load tasks');
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const fetched = await fetchTasks();
+      const fetched = await fetchTasks(token);
       setTasks(fetched);
     } catch (err) {
       setError('Failed to load tasks');
-      console.error(err);
+      console.error('Todoist loadTasks error:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     loadTasks();
@@ -85,7 +96,12 @@ export function TodoistPanel({
 
   const handleComplete = async (task: TodoistTask) => {
     try {
-      await completeTask(task.id);
+      const token = getToken('todoist');
+      if (!token) {
+        return;
+      }
+
+      await completeTask(token, task.id);
       
       // Log completion locally
       const event: TaskCompletionEvent = {
@@ -109,7 +125,12 @@ export function TodoistPanel({
     if (!newTaskContent.trim()) return;
     
     try {
-      const task = await createTask(newTaskContent, 'today');
+      const token = getToken('todoist');
+      if (!token) {
+        return;
+      }
+
+      const task = await createTask(token, newTaskContent, 'today');
       setTasks((prev) => [...prev, task]);
       setNewTaskContent('');
       setShowAddTask(false);

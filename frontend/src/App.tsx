@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SettingsProvider, useSettings } from './state/SettingsContext';
+import { VaultProvider, useVault } from './state/VaultContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MultiClockPanel } from './components/clock/MultiClockPanel';
 import { IntentionPanel } from './components/intention/IntentionPanel';
@@ -27,9 +28,11 @@ import {
 } from './db';
 import { getDateKey } from './utils/dateUtils';
 import { fetchTasks } from './api/todoist';
+import { SettingsPanel } from './components/modals/SettingsPanel.tsx';
 
 function DashboardContent() {
   const { settings, updateFeedVisibility } = useSettings();
+  const { isUnlocked, getToken } = useVault();
   const editorRef = useRef<unknown>(null);
 
   // State
@@ -47,6 +50,7 @@ function DashboardContent() {
     completedTasks: [],
   });
   const [_showAddTaskFromShortcut, _setShowAddTaskFromShortcut] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   // Reserved for future use: const pomodoroRef = useRef<{ toggle: () => void } | null>(null);
 
   // Load initial data
@@ -78,15 +82,20 @@ function DashboardContent() {
 
       // Load tasks for selector
       try {
-        const fetchedTasks = await fetchTasks();
-        setTasks(fetchedTasks);
+        if (isUnlocked) {
+          const token = getToken('todoist');
+          if (token) {
+            const fetchedTasks = await fetchTasks(token);
+            setTasks(fetchedTasks);
+          }
+        }
       } catch (err) {
         console.error('Failed to load tasks:', err);
       }
     };
 
     loadData();
-  }, []);
+  }, [isUnlocked, getToken]);
 
   // Handle pomodoro completion
   const handlePomodoroComplete = useCallback((session: PomodoroSession) => {
@@ -239,16 +248,123 @@ function DashboardContent() {
 
       {/* Shortcuts help */}
       <ShortcutsHelp />
+
+      {/* Settings button and panel */}
+      <button
+        type="button"
+        className="fixed bottom-4 left-4 z-40 w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white flex items-center justify-center text-sm"
+        onClick={() => setShowSettings(true)}
+        aria-label="Open settings"
+      >
+        ⚙
+      </button>
+
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
+}
+
+function DashboardShell() {
+  const { hasVault, isUnlocked, setMasterPassword, unlock, clearVault } = useVault();
+  const [createPassword, setCreatePassword] = useState('');
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCreate = async () => {
+    if (!createPassword.trim()) return;
+    try {
+      await setMasterPassword(createPassword);
+      setCreatePassword('');
+      setError(null);
+    } catch (e) {
+      console.error('Failed to set dashboard password:', e);
+      setError('Failed to set password');
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!unlockPassword.trim()) return;
+    const ok = await unlock(unlockPassword);
+    if (!ok) {
+      setError('Incorrect password');
+      return;
+    }
+    setUnlockPassword('');
+    setError(null);
+  };
+
+  if (!hasVault) {
+    return (
+      <div className="h-screen w-screen bg-dashboard-bg flex items-center justify-center">
+        <div className="panel max-w-sm w-full">
+          <h2 className="panel-header">Dashboard Password</h2>
+          <p className="text-sm text-slate-400 mb-3">
+            Set a password to protect your API keys and other sensitive data. This password is kept only in your browser and never sent to a server.
+          </p>
+          {error && <p className="text-sm text-danger mb-2">{error}</p>}
+          <div className="space-y-2">
+            <input
+              type="password"
+              value={createPassword}
+              onChange={(e) => setCreatePassword(e.target.value)}
+              placeholder="New dashboard password"
+              className="input"
+            />
+            <button onClick={handleCreate} className="btn btn-primary text-xs">
+              Save Password
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <div className="h-screen w-screen bg-dashboard-bg flex items-center justify-center">
+        <div className="panel max-w-sm w-full">
+          <h2 className="panel-header">Unlock Dashboard</h2>
+          <p className="text-sm text-slate-400 mb-3">
+            Enter your dashboard password to unlock saved API keys.
+          </p>
+          {error && <p className="text-sm text-danger mb-2">{error}</p>}
+          <div className="space-y-2">
+            <input
+              type="password"
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+              placeholder="Dashboard password"
+              className="input"
+            />
+            <div className="flex items-center gap-2">
+              <button onClick={handleUnlock} className="btn btn-primary text-xs">
+                Unlock
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost text-[10px] text-slate-500"
+                onClick={clearVault}
+              >
+                Clear stored credentials
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <DashboardContent />;
 }
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <SettingsProvider>
-        <DashboardContent />
-      </SettingsProvider>
+      <VaultProvider>
+        <SettingsProvider>
+          <DashboardShell />
+        </SettingsProvider>
+      </VaultProvider>
     </ErrorBoundary>
   );
 }

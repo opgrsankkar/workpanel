@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FeedItem } from '../../types';
-import { fetchHackerNews, fetchReuters } from '../../api/feeds';
+import { fetchHackerNews } from '../../api/feeds';
 import { formatRelativeTime } from '../../utils/dateUtils';
 
 interface FeedPanelProps {
@@ -72,11 +72,8 @@ function FeedSection({
 
 export function FeedPanel({ visible }: FeedPanelProps) {
   const [hnItems, setHnItems] = useState<FeedItem[]>([]);
-  const [reutersItems, setReutersItems] = useState<FeedItem[]>([]);
   const [hnLoading, setHnLoading] = useState(true);
-  const [reutersLoading, setReutersLoading] = useState(true);
   const [hnError, setHnError] = useState<string | null>(null);
-  const [reutersError, setReutersError] = useState<string | null>(null);
 
   const loadHackerNews = async () => {
     try {
@@ -91,23 +88,9 @@ export function FeedPanel({ visible }: FeedPanelProps) {
     }
   };
 
-  const loadReuters = async () => {
-    try {
-      setReutersLoading(true);
-      setReutersError(null);
-      const items = await fetchReuters();
-      setReutersItems(items);
-    } catch (err) {
-      setReutersError('Failed to load');
-    } finally {
-      setReutersLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (visible) {
       loadHackerNews();
-      loadReuters();
     }
   }, [visible]);
 
@@ -125,14 +108,6 @@ export function FeedPanel({ visible }: FeedPanelProps) {
         loading={hnLoading}
         error={hnError}
         onRefresh={loadHackerNews}
-      />
-
-      <FeedSection
-        title="Reuters"
-        items={reutersItems}
-        loading={reutersLoading}
-        error={reutersError}
-        onRefresh={loadReuters}
       />
     </div>
   );

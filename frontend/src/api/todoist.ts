@@ -1,19 +1,28 @@
 import { TodoistTask } from '../types';
 
-const API_BASE = '/api/todoist';
+const TODOIST_API_BASE = 'https://api.todoist.com/rest/v2';
 
-export async function fetchTasks(): Promise<TodoistTask[]> {
-  const response = await fetch(`${API_BASE}/tasks`);
+function authHeaders(apiToken: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${apiToken}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+export async function fetchTasks(apiToken: string): Promise<TodoistTask[]> {
+  const response = await fetch(`${TODOIST_API_BASE}/tasks`, {
+    headers: { Authorization: `Bearer ${apiToken}` },
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch tasks');
   }
   return response.json();
 }
 
-export async function createTask(content: string, dueString?: string): Promise<TodoistTask> {
-  const response = await fetch(`${API_BASE}/tasks`, {
+export async function createTask(apiToken: string, content: string, dueString?: string): Promise<TodoistTask> {
+  const response = await fetch(`${TODOIST_API_BASE}/tasks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(apiToken),
     body: JSON.stringify({
       content,
       due_string: dueString,
@@ -25,27 +34,30 @@ export async function createTask(content: string, dueString?: string): Promise<T
   return response.json();
 }
 
-export async function completeTask(taskId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/tasks/${taskId}/close`, {
+export async function completeTask(apiToken: string, taskId: string): Promise<void> {
+  const response = await fetch(`${TODOIST_API_BASE}/tasks/${taskId}/close`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${apiToken}` },
   });
   if (!response.ok) {
     throw new Error('Failed to complete task');
   }
 }
 
-export async function reopenTask(taskId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/tasks/${taskId}/reopen`, {
+export async function reopenTask(apiToken: string, taskId: string): Promise<void> {
+  const response = await fetch(`${TODOIST_API_BASE}/tasks/${taskId}/reopen`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${apiToken}` },
   });
   if (!response.ok) {
     throw new Error('Failed to reopen task');
   }
 }
 
-export async function deleteTask(taskId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+export async function deleteTask(apiToken: string, taskId: string): Promise<void> {
+  const response = await fetch(`${TODOIST_API_BASE}/tasks/${taskId}`, {
     method: 'DELETE',
+    headers: { Authorization: `Bearer ${apiToken}` },
   });
   if (!response.ok) {
     throw new Error('Failed to delete task');
