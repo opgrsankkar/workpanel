@@ -142,12 +142,23 @@ export function PomodoroTimer({
   }, [session, workMinutes]);
 
   const toggleTimer = useCallback(() => {
+    // If a timer is running, stop it
     if (isRunning) {
       stopPomodoro();
+      return;
+    }
+
+    // When not running, decide whether to start a work session
+    // or a standalone break timer based on the current mode.
+    if (focusMode === 'break' || isBreak) {
+      setSession(null);
+      setIsBreak(true);
+      setSecondsRemaining(breakMinutes * 60);
+      setIsRunning(true);
     } else {
       startPomodoro();
     }
-  }, [isRunning, startPomodoro, stopPomodoro]);
+  }, [isRunning, startPomodoro, stopPomodoro, focusMode, isBreak, breakMinutes]);
 
   const handleInterrupt = useCallback(async () => {
     if (session) {

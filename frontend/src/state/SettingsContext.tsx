@@ -4,6 +4,8 @@ import {
   TimezoneConfig,
   FeedVisibility,
   ShortcutConfig,
+  PanelId,
+  PanelPosition,
 } from '../types';
 import {
   loadSettings,
@@ -12,6 +14,9 @@ import {
   toggleFocusMode as toggleFocusModeStorage,
   updateTodayIntention as updateTodayIntentionStorage,
   updateShortcuts as updateShortcutsStorage,
+  updatePanelPositions as updatePanelPositionsStorage,
+  updatePanelSizes as updatePanelSizesStorage,
+  resetPanelLayout as resetPanelLayoutStorage,
 } from './settings';
 
 interface SettingsContextValue {
@@ -22,6 +27,9 @@ interface SettingsContextValue {
   updateTodayIntention: (intention: string) => void;
   updateShortcuts: (shortcuts: ShortcutConfig) => void;
   reloadSettings: () => void;
+  updatePanelPosition: (panelId: PanelId, position: PanelPosition) => void;
+  updatePanelSize: (panelId: PanelId, size: { width: number; height: number }) => void;
+  resetPanelLayout: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -54,8 +62,38 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(updated);
   }, []);
 
+  const updatePanelPosition = useCallback((panelId: PanelId, position: PanelPosition) => {
+    const current = loadSettings();
+    const currentPositions = current.panelPositions || {};
+    const nextPositions = {
+      ...currentPositions,
+      [panelId]: position,
+    };
+    const updated = updatePanelPositionsStorage(nextPositions);
+    setSettings(updated as DashboardSettings);
+  }, []);
+
+  const updatePanelSize = useCallback(
+    (panelId: PanelId, size: { width: number; height: number }) => {
+      const current = loadSettings();
+      const currentSizes = current.panelSizes || {};
+      const nextSizes = {
+        ...currentSizes,
+        [panelId]: size,
+      };
+      const updated = updatePanelSizesStorage(nextSizes);
+      setSettings(updated as DashboardSettings);
+    },
+    [],
+  );
+
   const reloadSettings = useCallback(() => {
     setSettings(loadSettings());
+  }, []);
+
+  const resetPanelLayout = useCallback(() => {
+    const updated = resetPanelLayoutStorage();
+    setSettings(updated);
   }, []);
 
   return (
@@ -68,6 +106,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updateTodayIntention,
         updateShortcuts,
         reloadSettings,
+        updatePanelPosition,
+        updatePanelSize,
+        resetPanelLayout,
       }}
     >
       {children}

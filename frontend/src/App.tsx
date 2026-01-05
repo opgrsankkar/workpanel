@@ -13,6 +13,7 @@ import { FeedPanel } from './components/feeds/FeedPanel';
 import { TaskSelectorModal } from './components/modals/TaskSelectorModal';
 import { ShortcutsHelp } from './components/shortcuts/ShortcutsHelp';
 import { FocusModeIndicator } from './components/ui/FocusModeIndicator';
+import { DraggablePanel } from './components/ui/DraggablePanel';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { 
   TodoistTask, 
@@ -176,62 +177,60 @@ function DashboardContent() {
 
   const feedsVisible = settings.feedVisibility.hackerNews || settings.feedVisibility.reuters;
   const focusMode = settings.focusModeEnabled;
+  const feedsShown = feedsVisible && !focusMode;
 
   return (
     <div className="h-screen w-screen bg-dashboard-bg p-4 overflow-hidden">
-      {/* Main grid layout - optimized for 16:9 */}
-      <div className="h-full grid grid-cols-12 grid-rows-6 gap-4">
-        
-        {/* Row 1-2: Pomodoro (left, 2 rows) + Intention (top center) + Clocks (top right) */}
-        <div className="col-span-3 row-span-2">
+      {/* Draggable dashboard canvas */}
+      <div className="h-full w-full relative overflow-hidden">
+        <DraggablePanel panelId="pomodoro" className="w-80">
           <PomodoroTimer
             attachedTask={attachedTask}
             onTaskAttach={handleTaskAttach}
             onComplete={handlePomodoroComplete}
             onInterrupt={() => {
-              // Trigger interrupt log
               const btn = document.querySelector('[data-interrupt-quick]') as HTMLButtonElement;
               if (btn) btn.click();
             }}
           />
-        </div>
-        <div className="col-span-4 row-span-1">
+        </DraggablePanel>
+
+        <DraggablePanel panelId="intention" className="w-[420px]">
           <IntentionPanel />
-        </div>
-        <div className="col-span-5 row-span-1">
+        </DraggablePanel>
+
+        <DraggablePanel panelId="clocks" className="w-72">
           <MultiClockPanel />
-        </div>
+        </DraggablePanel>
 
-        {/* Row 2-6: Editor (center, extends to bottom) + Interrupts/Feeds (right) */}
-        <div className={`col-span-6 row-span-5 ${focusMode ? '' : ''}`}>
+        <DraggablePanel panelId="interrupts" className="w-64">
+          <InterruptPanel
+            interrupts={interrupts}
+            onInterruptAdded={handleInterruptAdded}
+          />
+        </DraggablePanel>
+
+        <DraggablePanel panelId="editor" className="w-[720px] h-[520px]">
           <MonacoPanel editorRef={editorRef} />
-        </div>
+        </DraggablePanel>
 
-        <div className="col-span-3 row-span-5 flex flex-col gap-4">
-          <div className="flex-1">
-            <InterruptPanel
-              interrupts={interrupts}
-              onInterruptAdded={handleInterruptAdded}
-            />
-          </div>
-          <div className={`flex-1 ${focusMode ? 'focus-hidden' : ''}`}>
-            <FeedPanel visible={feedsVisible && !focusMode} />
-          </div>
-        </div>
+        {feedsShown && (
+          <DraggablePanel panelId="feeds" className="w-80 h-[520px]">
+            <FeedPanel visible={feedsShown} />
+          </DraggablePanel>
+        )}
 
-        {/* Row 3-5: Tasks (left) */}
-        <div className="col-span-3 row-span-3">
+        <DraggablePanel panelId="tasks" className="w-80 h-[320px]">
           <TodoistPanel
             onTaskSelect={(task) => setSelectedTask(task)}
             selectedTaskId={selectedTask?.id || null}
             onTaskCompleted={handleTaskCompleted}
           />
-        </div>
+        </DraggablePanel>
 
-        {/* Row 6: Summary (left only) */}
-        <div className="col-span-3 row-span-1">
+        <DraggablePanel panelId="summary" className="w-80">
           <DailySummaryPanel summary={summary} />
-        </div>
+        </DraggablePanel>
       </div>
 
       {/* Task selector modal */}

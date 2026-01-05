@@ -88,12 +88,38 @@ export interface ShortcutConfig {
   toggleFocusMode: string;
 }
 
+export type PanelId =
+  | 'pomodoro'
+  | 'intention'
+  | 'clocks'
+  | 'interrupts'
+  | 'editor'
+  | 'feeds'
+  | 'tasks'
+  | 'summary';
+
+export interface PanelPosition {
+  x: number;
+  y: number;
+}
+
+export type PanelPositions = Partial<Record<PanelId, PanelPosition>>;
+
+export interface PanelSize {
+  width: number;
+  height: number;
+}
+
+export type PanelSizes = Partial<Record<PanelId, PanelSize>>;
+
 export interface DashboardSettings {
   timezones: TimezoneConfig[];
   feedVisibility: FeedVisibility;
   focusModeEnabled: boolean;
   shortcuts: ShortcutConfig;
   todayIntention: string;
+   panelPositions?: PanelPositions;
+  panelSizes?: PanelSizes;
 }
 
 // Feed item

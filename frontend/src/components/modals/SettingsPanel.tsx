@@ -9,7 +9,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { getToken, setServiceToken, clearServiceToken, clearVault } = useVault();
-  const { settings } = useSettings();
+  const { settings, resetPanelLayout } = useSettings();
   const [todoistToken, setTodoistToken] = useState('');
   const [hasTodoistToken, setHasTodoistToken] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -158,6 +158,23 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               onClick={handleClearVault}
             >
               Clear all stored credentials
+            </button>
+          </section>
+
+          {/* Layout */}
+          <section>
+            <h3 className="text-xs text-slate-400 uppercase tracking-wide mb-2">
+              Layout
+            </h3>
+            <p className="text-[11px] text-slate-500 mb-2">
+              Reset all dashboard panels to their default size and move them back to the top-left so you can rearrange from a clean slate.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary text-xs"
+              onClick={resetPanelLayout}
+            >
+              Reset panel layout
             </button>
           </section>
         </div>

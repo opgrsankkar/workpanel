@@ -76,3 +76,20 @@ body {
 .focus-hidden {
   @apply opacity-30 pointer-events-none transition-opacity duration-300;
 }
+
+/* Resizable handle styling */
+.react-resizable-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  bottom: 4px;
+  right: 4px;
+  background: linear-gradient(135deg, #64748b, #0f172a);
+  border-radius: 9999px;
+  cursor: se-resize;
+}
+
+.react-resizable-handle-e,
+.react-resizable-handle-s {
+  border-radius: 9999px;
+}

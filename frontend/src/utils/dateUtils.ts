@@ -10,7 +10,7 @@ export function formatTime(date: Date, timezone: string): string {
 }
 
 export function formatDate(date: Date, timezone: string): string {
-  return formatInTimeZone(date, timezone, 'EEE, MMM d, yyyy');
+  return formatInTimeZone(date, timezone, 'EEE, MMM d');
 }
 
 export function formatTimeOnly(date: Date, timezone: string): string {
