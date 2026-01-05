@@ -1,6 +1,7 @@
 # My Dashboard
 
-A personal productivity dashboard with multi-timezone clocks, Todoist integration, Pomodoro timer, interrupt logging, Monaco editor for notes, and news feeds.
+A Self-hosted personal productivity dashboard with multi-timezone clocks, Todoist integration, Pomodoro timer, interrupt logging, Monaco editor for notes, and news feeds.
+Disclaimer: About 90% of the code at this stage of the commit is AI-generated.
 
 ## Features
 
@@ -14,7 +15,7 @@ A personal productivity dashboard with multi-timezone clocks, Todoist integratio
 - **Interrupt Log**: One-click interrupt tracking with optional notes
 - **Daily Summary**: Pomodoros completed, focus time, tasks done, interruptions
 - **Monaco Editor**: Full-featured code/markdown editor with local file system integration
-- **News Feeds**: Hacker News top 10 and Reuters headlines
+- **News Feeds**: Hacker News top 10.
 - **Keyboard Shortcuts**:
   - `Alt+P`: Start/Stop Pomodoro
   - `Alt+T`: Add Task
@@ -27,58 +28,22 @@ A personal productivity dashboard with multi-timezone clocks, Todoist integratio
 
 ### Prerequisites
 
-- Node.js 18+
 - A Todoist account and API key
+- All features run entirely in the browser.
 
-### Backend Setup
+### Development Setup
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
-
-2. Install dependencies:
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Create a `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. Edit `.env` and add your Todoist API key:
-   ```
-   TODOIST_API_KEY=your_api_key_here
-   ```
-   
-   Get your API key from: https://todoist.com/prefs/integrations (scroll to "API token")
-
-5. Start the backend server:
+2. Start the development server:
    ```bash
    npm run dev
    ```
 
-   The backend will run on http://localhost:3001
-
-### Frontend Setup
-
-1. Navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will run on http://localhost:5173
+   The app will run on http://localhost:5173
 
 ### Notes Folder
 
@@ -86,65 +51,17 @@ When you first use the Monaco editor, you'll be prompted to select a folder for 
 
 **Note**: The File System Access API requires a Chromium-based browser (Chrome, Edge, Brave, etc.).
 
-## Architecture
-
-```
-mydashboard/
-├── backend/                 # Express.js API server
-│   ├── src/
-│   │   ├── index.ts        # Server entry point
-│   │   └── routes/
-│   │       ├── todoist.ts  # Todoist API proxy
-│   │       └── feeds.ts    # News feed fetching
-│   └── package.json
-│
-├── frontend/                # React + Vite SPA
-│   ├── src/
-│   │   ├── App.tsx         # Main dashboard layout
-│   │   ├── api/            # API client functions
-│   │   ├── components/     # UI components
-│   │   ├── db/             # IndexedDB repositories
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── state/          # Settings context & storage
-│   │   ├── types/          # TypeScript types
-│   │   └── utils/          # Utility functions
-│   └── package.json
-│
-└── README.md
-```
-
 ## Data Storage
 
-- **API Keys**: Backend environment variables (never exposed to frontend)
+- **API tokens (Todoist)**: Encrypted client-side vault stored in your browser using the Web Crypto API (never sent to any server)
 - **Notes**: Local file system via File System Access API
 - **Pomodoro & Interrupt Logs**: IndexedDB (persisted locally)
-- **Settings**: LocalStorage (timezones, shortcuts, feed visibility, focus mode)
-- **Tasks**: Fetched from Todoist API (no local caching)
-
-## Development
-
-### Running Both Servers
-
-Open two terminal windows:
-
-```bash
-# Terminal 1 - Backend
-cd backend && npm run dev
-
-# Terminal 2 - Frontend
-cd frontend && npm run dev
-```
-
-The frontend is configured to proxy `/api` requests to the backend.
+- **Settings & Layout**: LocalStorage (timezones, shortcuts, panel positions/sizes, feed visibility, focus mode)
+- **Tasks**: Fetched directly from the Todoist REST API from the browser (no local caching, no backend proxy)
 
 ### Building for Production
 
 ```bash
-# Backend
-cd backend
-npm run build
-
-# Frontend
 cd frontend
 npm run build
 ```
@@ -159,11 +76,9 @@ npm run build
 | `Alt+F` | Toggle news feeds |
 | `Alt+M` | Toggle focus mode |
 
-Shortcuts can be customized in the settings (stored in LocalStorage).
-
 ## Browser Compatibility
 
-- **Recommended**: Chrome, Edge, Brave (Chromium-based)
+- **Recommended**: Helium, Chrome, Edge (Chromium-based)
 - The File System Access API for notes requires a Chromium browser
 - Other features work in Firefox/Safari, but notes will be disabled
 
