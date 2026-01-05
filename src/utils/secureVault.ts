@@ -55,7 +55,8 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
   return subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt,
+      // Uint8Array is a valid BufferSource for Web Crypto; assert to satisfy TS dom types
+      salt: salt as BufferSource,
       iterations: 200000,
       hash: 'SHA-256',
     },
@@ -74,7 +75,8 @@ export async function encryptData(password: string, data: unknown): Promise<Encr
   const subtle = getSubtleCrypto();
   const plaintext = encoder.encode(JSON.stringify(data));
   const ciphertext = await subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    // iv is a Uint8Array, which is a valid BufferSource at runtime
+    { name: 'AES-GCM', iv: iv as BufferSource },
     key,
     plaintext,
   );
@@ -100,9 +102,9 @@ export async function decryptData(password: string, payload: EncryptedPayload): 
   try {
     const ciphertext = base64ToBuffer(payload.ciphertext);
     const decrypted = await subtle.decrypt(
-      { name: 'AES-GCM', iv },
+      { name: 'AES-GCM', iv: iv as BufferSource },
       key,
-      ciphertext,
+      ciphertext as BufferSource,
     );
     const json = decoder.decode(decrypted);
     return JSON.parse(json);
