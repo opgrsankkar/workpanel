@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useVault } from '../../state/VaultContext';
 import { useSettings } from '../../state/SettingsContext';
 import {
   fetchRecentRooms,
   fetchRoomMessages,
+  sendMessage,
   WebexRoom,
   WebexMessage,
 } from '../../api/webex';
@@ -24,6 +25,10 @@ export function WebexPanel() {
   const [error, setError] = useState<string | null>(null);
   const [secondsToRefresh, setSecondsToRefresh] = useState<number>(60);
   const [showHiddenRooms, setShowHiddenRooms] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const replyInputRef = useRef<HTMLInputElement | null>(null);
 
   // Load rooms
   const loadRooms = useCallback(async () => {
@@ -103,13 +108,45 @@ export function WebexPanel() {
     return () => clearInterval(interval);
   }, [selectedRoom, loadMessages, loadRooms]);
 
+  // Scroll messages view to bottom and focus reply input when opening or when messages change
+  useEffect(() => {
+    if (view !== 'messages') return;
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+    if (replyInputRef.current) {
+      replyInputRef.current.focus();
+    }
+  }, [view, messages.length, selectedRoom]);
+
   // Go back to rooms list
   const handleBack = useCallback(() => {
     setView('rooms');
     setSelectedRoom(null);
     setMessages([]);
     setError(null);
+    setReplyText('');
   }, []);
+
+  // Send a reply message
+  const handleSendReply = useCallback(async () => {
+    const token = getToken('webex');
+    if (!token || !selectedRoom || !replyText.trim()) return;
+
+    try {
+      setSending(true);
+      await sendMessage(token, selectedRoom.id, replyText.trim());
+      setReplyText('');
+      // Refresh messages to show the new one
+      await loadMessages(selectedRoom);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  }, [getToken, selectedRoom, replyText, loadMessages]);
 
   // Check if a room has unread messages
   const hasUnread = useCallback(
@@ -186,8 +223,7 @@ export function WebexPanel() {
                   {formatRelativeTime(room.lastActivity)}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 text-xs">›</span>
+              <div className="flex flex-col items-end gap-1">
                 <button
                   type="button"
                   className="text-[10px] text-slate-500 hover:text-slate-300"
@@ -200,6 +236,17 @@ export function WebexPanel() {
                   }}
                 >
                   Hide
+                </button>
+                <button
+                  type="button"
+                  className="text-[10px] text-slate-500 hover:text-slate-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const now = new Date().toISOString();
+                    updateWebexLastOpened(room.id, now);
+                  }}
+                >
+                  Mark read
                 </button>
               </div>
             </div>
@@ -242,7 +289,10 @@ export function WebexPanel() {
     }
 
     return (
-      <div className="flex-1 overflow-y-auto space-y-2 p-2">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto space-y-2 p-2"
+      >
         {messages.map((msg) => (
           <div key={msg.id} className="bg-slate-700/30 rounded px-2 py-1.5">
             <div className="flex items-center gap-2 mb-0.5">
@@ -387,6 +437,35 @@ export function WebexPanel() {
 
       {/* Content */}
       {view === 'rooms' ? renderRooms() : renderMessages()}
+
+      {/* Reply input (only in messages view) */}
+      {view === 'messages' && selectedRoom && (
+        <div className="px-2 py-2 border-t border-slate-700/30 flex items-center gap-2">
+          <input
+            ref={replyInputRef}
+            type="text"
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && replyText.trim()) {
+                e.preventDefault();
+                handleSendReply();
+              }
+            }}
+            placeholder="Type a message..."
+            className="input text-xs flex-1"
+            disabled={sending}
+          />
+          <button
+            type="button"
+            className="btn btn-primary text-xs"
+            onClick={handleSendReply}
+            disabled={sending || !replyText.trim()}
+          >
+            {sending ? '...' : 'Send'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

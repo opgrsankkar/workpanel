@@ -149,3 +149,38 @@ export async function fetchCurrentUser(apiToken: string): Promise<WebexPerson> {
     avatar: data.avatar,
   };
 }
+
+/**
+ * Send a message to a room
+ */
+export async function sendMessage(
+  apiToken: string,
+  roomId: string,
+  text: string,
+): Promise<WebexMessage> {
+  const response = await fetch(`${WEBEX_API_BASE}/messages`, {
+    method: 'POST',
+    headers: authHeaders(apiToken),
+    body: JSON.stringify({
+      roomId,
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Invalid or expired Webex token. Please update it in Settings.');
+    }
+    throw new Error('Failed to send message');
+  }
+
+  const data = await response.json();
+  return {
+    id: data.id,
+    roomId: data.roomId,
+    personId: data.personId,
+    personEmail: data.personEmail,
+    text: data.text || '',
+    created: data.created,
+  };
+}
