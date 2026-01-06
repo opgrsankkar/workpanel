@@ -38,6 +38,7 @@ const DEFAULT_PANEL_POSITIONS: PanelPositions = {
   feeds: { x: 1000, y: 140 },
   tasks: { x: 0, y: 220 },
   summary: { x: 0, y: 420 },
+  webex: { x: 1340, y: 0 },
 };
 
 export const DEFAULT_PANEL_SIZES: PanelSizes = {
@@ -49,6 +50,7 @@ export const DEFAULT_PANEL_SIZES: PanelSizes = {
   feeds: { width: 320, height: 520 },
   tasks: { width: 320, height: 320 },
   summary: { width: 320, height: 160 },
+  webex: { width: 320, height: 400 },
 };
 
 const DEFAULT_SETTINGS: DashboardSettings = {
@@ -133,6 +135,7 @@ export function resetPanelLayout(): DashboardSettings {
     feeds: { x: 0, y: 0 },
     tasks: { x: 0, y: 0 },
     summary: { x: 0, y: 0 },
+    webex: { x: 0, y: 0 },
   };
 
   return updateSettings({

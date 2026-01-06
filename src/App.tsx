@@ -10,6 +10,7 @@ import { InterruptPanel } from './components/productivity/InterruptPanel';
 import { DailySummaryPanel } from './components/productivity/DailySummaryPanel';
 import { MonacoPanel } from './components/editor/MonacoPanel';
 import { FeedPanel } from './components/feeds/FeedPanel';
+import { WebexPanel } from './components/webex/WebexPanel';
 import { TaskSelectorModal } from './components/modals/TaskSelectorModal';
 import { ShortcutsHelp } from './components/shortcuts/ShortcutsHelp';
 import { FocusModeIndicator } from './components/ui/FocusModeIndicator';
@@ -230,6 +231,10 @@ function DashboardContent() {
 
         <DraggablePanel panelId="summary" className="w-80">
           <DailySummaryPanel summary={summary} />
+        </DraggablePanel>
+
+        <DraggablePanel panelId="webex" className="w-80 h-[400px]">
+          <WebexPanel />
         </DraggablePanel>
       </div>
 

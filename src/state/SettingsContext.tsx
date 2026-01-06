@@ -17,6 +17,7 @@ import {
   updatePanelPositions as updatePanelPositionsStorage,
   updatePanelSizes as updatePanelSizesStorage,
   resetPanelLayout as resetPanelLayoutStorage,
+  updateSettings as updateSettingsStorage,
 } from './settings';
 
 interface SettingsContextValue {
@@ -30,6 +31,7 @@ interface SettingsContextValue {
   updatePanelPosition: (panelId: PanelId, position: PanelPosition) => void;
   updatePanelSize: (panelId: PanelId, size: { width: number; height: number }) => void;
   resetPanelLayout: () => void;
+  updateWebexLastOpened: (roomId: string, timestamp: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -96,6 +98,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(updated);
   }, []);
 
+  const updateWebexLastOpened = useCallback((roomId: string, timestamp: string) => {
+    const current = loadSettings();
+    const currentLastOpened = current.webexLastOpened || {};
+    const updated = updateSettingsStorage({
+      webexLastOpened: {
+        ...currentLastOpened,
+        [roomId]: timestamp,
+      },
+    });
+    setSettings(updated);
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -109,6 +123,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updatePanelPosition,
         updatePanelSize,
         resetPanelLayout,
+        updateWebexLastOpened,
       }}
     >
       {children}

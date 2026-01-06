@@ -10,25 +10,40 @@ interface SettingsPanelProps {
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const { getToken, setServiceToken, clearServiceToken, clearVault } = useVault();
   const { settings, resetPanelLayout } = useSettings();
+
+  // Todoist state
   const [todoistToken, setTodoistToken] = useState('');
   const [hasTodoistToken, setHasTodoistToken] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [savingTodoist, setSavingTodoist] = useState(false);
+  const [todoistError, setTodoistError] = useState<string | null>(null);
+
+  // Webex state
+  const [webexToken, setWebexToken] = useState('');
+  const [hasWebexToken, setHasWebexToken] = useState(false);
+  const [savingWebex, setSavingWebex] = useState(false);
+  const [webexError, setWebexError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    const current = getToken('todoist');
-    setHasTodoistToken(!!current);
+    // Todoist
+    const currentTodoist = getToken('todoist');
+    setHasTodoistToken(!!currentTodoist);
     setTodoistToken('');
-    setError(null);
+    setTodoistError(null);
+
+    // Webex
+    const currentWebex = getToken('webex');
+    setHasWebexToken(!!currentWebex);
+    setWebexToken('');
+    setWebexError(null);
   }, [open, getToken]);
 
   if (!open) return null;
 
   const handleSaveTodoist = async () => {
     try {
-      setSaving(true);
-      setError(null);
+      setSavingTodoist(true);
+      setTodoistError(null);
       const value = todoistToken.trim();
       if (!value) {
         await clearServiceToken('todoist');
@@ -40,24 +55,60 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
       setTodoistToken('');
     } catch (e) {
       console.error('Failed to save Todoist token:', e);
-      setError('Failed to save Todoist token');
+      setTodoistError('Failed to save Todoist token');
     } finally {
-      setSaving(false);
+      setSavingTodoist(false);
     }
   };
 
   const handleRemoveTodoist = async () => {
     try {
-      setSaving(true);
-      setError(null);
+      setSavingTodoist(true);
+      setTodoistError(null);
       await clearServiceToken('todoist');
       setTodoistToken('');
       setHasTodoistToken(false);
     } catch (e) {
       console.error('Failed to remove Todoist token:', e);
-      setError('Failed to remove Todoist token');
+      setTodoistError('Failed to remove Todoist token');
     } finally {
-      setSaving(false);
+      setSavingTodoist(false);
+    }
+  };
+
+  const handleSaveWebex = async () => {
+    try {
+      setSavingWebex(true);
+      setWebexError(null);
+      const value = webexToken.trim();
+      if (!value) {
+        await clearServiceToken('webex');
+        setHasWebexToken(false);
+      } else {
+        await setServiceToken('webex', value);
+        setHasWebexToken(true);
+      }
+      setWebexToken('');
+    } catch (e) {
+      console.error('Failed to save Webex token:', e);
+      setWebexError('Failed to save Webex token');
+    } finally {
+      setSavingWebex(false);
+    }
+  };
+
+  const handleRemoveWebex = async () => {
+    try {
+      setSavingWebex(true);
+      setWebexError(null);
+      await clearServiceToken('webex');
+      setWebexToken('');
+      setHasWebexToken(false);
+    } catch (e) {
+      console.error('Failed to remove Webex token:', e);
+      setWebexError('Failed to remove Webex token');
+    } finally {
+      setSavingWebex(false);
     }
   };
 
@@ -88,7 +139,9 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             <h3 className="text-xs text-slate-400 uppercase tracking-wide mb-2">
               Connections
             </h3>
-            <div className="space-y-2">
+
+            {/* Todoist */}
+            <div className="space-y-2 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-200">Todoist</span>
                 <span className="text-xs text-slate-500">
@@ -106,7 +159,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                 <button
                   onClick={handleSaveTodoist}
                   className="btn btn-primary text-xs"
-                  disabled={saving}
+                  disabled={savingTodoist}
                 >
                   {hasTodoistToken ? 'Update' : 'Save'}
                 </button>
@@ -114,7 +167,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                   type="button"
                   onClick={handleRemoveTodoist}
                   className="btn btn-secondary text-xs"
-                  disabled={saving}
+                  disabled={savingTodoist}
                 >
                   Remove
                 </button>
@@ -122,7 +175,54 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
               <p className="text-[11px] text-slate-500">
                 The token is encrypted with your dashboard password and stored locally in your browser.
               </p>
-              {error && <p className="text-xs text-danger mt-1">{error}</p>}
+              {todoistError && <p className="text-xs text-danger mt-1">{todoistError}</p>}
+            </div>
+
+            {/* Webex */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-200">Webex</span>
+                <span className="text-xs text-slate-500">
+                  {hasWebexToken ? 'Saved' : 'Not configured'}
+                </span>
+              </div>
+              <input
+                type="password"
+                value={webexToken}
+                onChange={(e) => setWebexToken(e.target.value)}
+                placeholder={hasWebexToken ? '••••••••' : 'Webex API token'}
+                className="input text-sm"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveWebex}
+                  className="btn btn-primary text-xs"
+                  disabled={savingWebex}
+                >
+                  {hasWebexToken ? 'Update' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveWebex}
+                  className="btn btn-secondary text-xs"
+                  disabled={savingWebex}
+                >
+                  Remove
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Get your Webex token from{' '}
+                <a
+                  href="https://developer.webex.com/docs/getting-started"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  developer.webex.com
+                </a>
+                . Token is encrypted with your dashboard password.
+              </p>
+              {webexError && <p className="text-xs text-danger mt-1">{webexError}</p>}
             </div>
           </section>
 

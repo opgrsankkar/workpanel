@@ -96,7 +96,8 @@ export type PanelId =
   | 'editor'
   | 'feeds'
   | 'tasks'
-  | 'summary';
+  | 'summary'
+  | 'webex';
 
 export interface PanelPosition {
   x: number;
@@ -118,8 +119,9 @@ export interface DashboardSettings {
   focusModeEnabled: boolean;
   shortcuts: ShortcutConfig;
   todayIntention: string;
-   panelPositions?: PanelPositions;
+  panelPositions?: PanelPositions;
   panelSizes?: PanelSizes;
+  webexLastOpened?: Record<string, string>; // roomId → ISO timestamp for unread tracking
 }
 
 // Feed item
