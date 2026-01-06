@@ -9,7 +9,7 @@ import { PomodoroTimer } from './components/pomodoro/PomodoroTimer';
 import { InterruptPanel } from './components/productivity/InterruptPanel';
 import { DailySummaryPanel } from './components/productivity/DailySummaryPanel';
 import { MonacoPanel } from './components/editor/MonacoPanel';
-import { FeedPanel } from './components/feeds/FeedPanel';
+// ...existing code...
 import { WebexPanel } from './components/webex/WebexPanel';
 import { TaskSelectorModal } from './components/modals/TaskSelectorModal';
 import { ShortcutsHelp } from './components/shortcuts/ShortcutsHelp';
@@ -33,7 +33,7 @@ import { fetchTasks } from './api/todoist';
 import { SettingsPanel } from './components/modals/SettingsPanel.tsx';
 
 function DashboardContent() {
-  const { settings, updateFeedVisibility } = useSettings();
+  const { settings } = useSettings();
   const { isUnlocked, getToken } = useVault();
   const editorRef = useRef<unknown>(null);
 
@@ -159,26 +159,16 @@ function DashboardContent() {
     }
   }, []);
 
-  const handleToggleFeeds = useCallback(() => {
-    const current = settings.feedVisibility;
-    const allHidden = !current.hackerNews && !current.reuters;
-    updateFeedVisibility({
-      hackerNews: allHidden,
-      reuters: allHidden,
-    });
-  }, [settings.feedVisibility, updateFeedVisibility]);
+  // ...existing code...
 
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
     onStartStopPomodoro: handleStartStopPomodoro,
     onAddTask: handleAddTask,
     onFocusEditor: handleFocusEditor,
-    onToggleFeeds: handleToggleFeeds,
   });
 
-  const feedsVisible = settings.feedVisibility.hackerNews || settings.feedVisibility.reuters;
-  const focusMode = settings.focusModeEnabled;
-  const feedsShown = feedsVisible && !focusMode;
+  // ...existing code...
 
   return (
     <div className="h-screen w-screen bg-dashboard-bg p-4 overflow-hidden">
@@ -215,11 +205,7 @@ function DashboardContent() {
           <MonacoPanel editorRef={editorRef} />
         </DraggablePanel>
 
-        {feedsShown && (
-          <DraggablePanel panelId="feeds" className="w-80 h-[520px]">
-            <FeedPanel visible={feedsShown} />
-          </DraggablePanel>
-        )}
+        {/* ...existing code... */}
 
         <DraggablePanel panelId="tasks" className="w-80 h-[320px]">
           <TodoistPanel
