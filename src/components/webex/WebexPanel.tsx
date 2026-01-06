@@ -22,6 +22,7 @@ export function WebexPanel() {
   const [selectedRoom, setSelectedRoom] = useState<WebexRoom | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [secondsToRefresh, setSecondsToRefresh] = useState<number>(60);
 
   // Load rooms
   const loadRooms = useCallback(async () => {
@@ -80,6 +81,26 @@ export function WebexPanel() {
   useEffect(() => {
     loadRooms();
   }, [loadRooms]);
+
+  // Auto-refresh timer for messages (60s)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsToRefresh((s) => {
+        if (s <= 1) {
+          // time to refresh
+          if (selectedRoom) {
+            loadMessages(selectedRoom);
+          } else {
+            loadRooms();
+          }
+          return 60;
+        }
+        return s - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [selectedRoom, loadMessages, loadRooms]);
 
   // Go back to rooms list
   const handleBack = useCallback(() => {
@@ -236,28 +257,65 @@ export function WebexPanel() {
               ←
             </button>
             <span className="flex-1 truncate text-sm">{selectedRoom.title}</span>
-            <button
-              onClick={() => selectedRoom && loadMessages(selectedRoom)}
-              className="text-slate-400 hover:text-white text-sm"
-              disabled={loading}
-              aria-label="Refresh messages"
-            >
-              ↻
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (selectedRoom) loadMessages(selectedRoom);
+                  setSecondsToRefresh(60);
+                }}
+                className="text-slate-400 hover:text-white text-sm"
+                disabled={loading}
+                aria-label="Refresh messages"
+              >
+                ↻
+              </button>
+              <span className="text-[11px] text-slate-500">{`${Math.floor(
+                secondsToRefresh / 60,
+              )}:${String(secondsToRefresh % 60).padStart(2, '0')}`}</span>
+            </div>
           </>
         ) : (
           <>
             <span className="flex-1">Webex</span>
-            <button
-              onClick={loadRooms}
-              className="text-slate-400 hover:text-white text-sm"
-              disabled={loading}
-              aria-label="Refresh rooms"
-            >
-              ↻
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  loadRooms();
+                  setSecondsToRefresh(60);
+                }}
+                className="text-slate-400 hover:text-white text-sm"
+                disabled={loading}
+                aria-label="Refresh rooms"
+              >
+                ↻
+              </button>
+              <span className="text-[11px] text-slate-500">{`${Math.floor(
+                secondsToRefresh / 60,
+              )}:${String(secondsToRefresh % 60).padStart(2, '0')}`}</span>
+            </div>
           </>
         )}
+      </div>
+
+      {/* Small toolbar: unread count + mark-all-as-read */}
+      <div className="px-3 py-2 border-b border-slate-700/20 flex items-center justify-between text-xs text-slate-400">
+        <div>
+          {rooms.length === 0
+            ? 'No rooms'
+            : `${rooms.filter((r) => hasUnread(r)).length} unread`}
+        </div>
+        <div>
+          <button
+            type="button"
+            className="btn btn-ghost text-xs"
+            onClick={() => {
+              const now = new Date().toISOString();
+              rooms.forEach((r) => updateWebexLastOpened(r.id, now));
+            }}
+          >
+            Mark all read
+          </button>
+        </div>
       </div>
 
       {/* Content */}
