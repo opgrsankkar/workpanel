@@ -5,14 +5,12 @@ interface UseKeyboardShortcutsProps {
   onStartStopPomodoro: () => void;
   onAddTask: () => void;
   onFocusEditor: () => void;
-  onToggleFeeds: () => void;
 }
 
 export function useKeyboardShortcuts({
   onStartStopPomodoro,
   onAddTask,
   onFocusEditor,
-  onToggleFeeds,
 }: UseKeyboardShortcutsProps) {
   const { settings, toggleFocusMode } = useSettings();
   const shortcuts = settings.shortcuts;
@@ -43,16 +41,6 @@ export function useKeyboardShortcuts({
     (e) => {
       e.preventDefault();
       onFocusEditor();
-    },
-    { enableOnFormTags: false }
-  );
-
-  // Toggle feeds visibility
-  useHotkeys(
-    shortcuts.toggleFeeds,
-    (e) => {
-      e.preventDefault();
-      onToggleFeeds();
     },
     { enableOnFormTags: false }
   );

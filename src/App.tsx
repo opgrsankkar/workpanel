@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SettingsProvider, useSettings } from './state/SettingsContext';
+import { SettingsProvider } from './state/SettingsContext';
 import { VaultProvider, useVault } from './state/VaultContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MultiClockPanel } from './components/clock/MultiClockPanel';
@@ -9,7 +9,6 @@ import { PomodoroTimer } from './components/pomodoro/PomodoroTimer';
 import { InterruptPanel } from './components/productivity/InterruptPanel';
 import { DailySummaryPanel } from './components/productivity/DailySummaryPanel';
 import { MonacoPanel } from './components/editor/MonacoPanel';
-// ...existing code...
 import { WebexPanel } from './components/webex/WebexPanel';
 import { TaskSelectorModal } from './components/modals/TaskSelectorModal';
 import { ShortcutsHelp } from './components/shortcuts/ShortcutsHelp';
@@ -33,7 +32,6 @@ import { fetchTasks } from './api/todoist';
 import { SettingsPanel } from './components/modals/SettingsPanel.tsx';
 
 function DashboardContent() {
-  const { settings } = useSettings();
   const { isUnlocked, getToken } = useVault();
   const editorRef = useRef<unknown>(null);
 
@@ -159,16 +157,12 @@ function DashboardContent() {
     }
   }, []);
 
-  // ...existing code...
-
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
     onStartStopPomodoro: handleStartStopPomodoro,
     onAddTask: handleAddTask,
     onFocusEditor: handleFocusEditor,
   });
-
-  // ...existing code...
 
   return (
     <div className="h-screen w-screen bg-dashboard-bg p-4 overflow-hidden">
