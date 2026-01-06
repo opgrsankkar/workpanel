@@ -32,6 +32,7 @@ interface SettingsContextValue {
   updatePanelSize: (panelId: PanelId, size: { width: number; height: number }) => void;
   resetPanelLayout: () => void;
   updateWebexLastOpened: (roomId: string, timestamp: string) => void;
+  updateWebexHiddenRooms: (roomIds: string[]) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -110,6 +111,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(updated);
   }, []);
 
+  const updateWebexHiddenRooms = useCallback((roomIds: string[]) => {
+    const updated = updateSettingsStorage({
+      webexHiddenRooms: roomIds,
+    });
+    setSettings(updated);
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -124,6 +132,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updatePanelSize,
         resetPanelLayout,
         updateWebexLastOpened,
+        updateWebexHiddenRooms,
       }}
     >
       {children}

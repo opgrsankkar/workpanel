@@ -13,7 +13,7 @@ type ViewMode = 'rooms' | 'messages';
 
 export function WebexPanel() {
   const { getToken } = useVault();
-  const { settings, updateWebexLastOpened } = useSettings();
+  const { settings, updateWebexLastOpened, updateWebexHiddenRooms } = useSettings();
 
   // State
   const [view, setView] = useState<ViewMode>('rooms');
@@ -23,6 +23,7 @@ export function WebexPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secondsToRefresh, setSecondsToRefresh] = useState<number>(60);
+  const [showHiddenRooms, setShowHiddenRooms] = useState(false);
 
   // Load rooms
   const loadRooms = useCallback(async () => {
@@ -136,6 +137,9 @@ export function WebexPanel() {
 
   // Render rooms list
   const renderRooms = () => {
+    const hiddenIds = settings.webexHiddenRooms || [];
+    const visibleRooms = rooms.filter((r) => !hiddenIds.includes(r.id));
+
     if (loading && rooms.length === 0) {
       return (
         <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
@@ -155,7 +159,7 @@ export function WebexPanel() {
       );
     }
 
-    if (rooms.length === 0) {
+    if (visibleRooms.length === 0) {
       return (
         <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
           No rooms found
@@ -165,7 +169,7 @@ export function WebexPanel() {
 
     return (
       <div className="flex-1 overflow-y-auto">
-        {rooms.map((room) => (
+        {visibleRooms.map((room) => (
           <button
             key={room.id}
             onClick={() => loadMessages(room)}
@@ -182,7 +186,22 @@ export function WebexPanel() {
                   {formatRelativeTime(room.lastActivity)}
                 </div>
               </div>
-              <span className="text-slate-600 text-xs">›</span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 text-xs">›</span>
+                <button
+                  type="button"
+                  className="text-[10px] text-slate-500 hover:text-slate-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const currentHidden = settings.webexHiddenRooms || [];
+                    if (!currentHidden.includes(room.id)) {
+                      updateWebexHiddenRooms([...currentHidden, room.id]);
+                    }
+                  }}
+                >
+                  Hide
+                </button>
+              </div>
             </div>
           </button>
         ))}
@@ -299,10 +318,27 @@ export function WebexPanel() {
 
       {/* Small toolbar: unread count + mark-all-as-read */}
       <div className="px-3 py-2 border-b border-slate-700/20 flex items-center justify-between text-xs text-slate-400">
-        <div>
-          {rooms.length === 0
-            ? 'No rooms'
-            : `${rooms.filter((r) => hasUnread(r)).length} unread`}
+        <div className="flex flex-col gap-1">
+          <span>
+            {(() => {
+              const hiddenIds = settings.webexHiddenRooms || [];
+              const visibleRooms = rooms.filter((r) => !hiddenIds.includes(r.id));
+              if (visibleRooms.length === 0) return 'No rooms';
+              const unreadCount = visibleRooms.filter((r) => hasUnread(r)).length;
+              return `${unreadCount} unread`;
+            })()}
+          </span>
+          <button
+            type="button"
+            className="text-[11px] text-slate-500 hover:text-slate-300 text-left underline-offset-2 hover:underline"
+            onClick={() => setShowHiddenRooms((v) => !v)}
+          >
+            {(() => {
+              const hiddenIds = settings.webexHiddenRooms || [];
+              const hiddenCount = rooms.filter((r) => hiddenIds.includes(r.id)).length;
+              return `Hidden rooms (${hiddenCount})`;
+            })()}
+          </button>
         </div>
         <div>
           <button
@@ -310,13 +346,44 @@ export function WebexPanel() {
             className="btn btn-ghost text-xs"
             onClick={() => {
               const now = new Date().toISOString();
-              rooms.forEach((r) => updateWebexLastOpened(r.id, now));
+              const hiddenIds = settings.webexHiddenRooms || [];
+              rooms
+                .filter((r) => !hiddenIds.includes(r.id))
+                .forEach((r) => updateWebexLastOpened(r.id, now));
             }}
           >
             Mark all read
           </button>
         </div>
       </div>
+
+      {/* Hidden rooms list */}
+      {showHiddenRooms && (
+        <div className="px-3 py-2 border-b border-slate-700/20 text-[11px] text-slate-400 space-y-1 max-h-32 overflow-y-auto">
+          {(() => {
+            const hiddenIds = settings.webexHiddenRooms || [];
+            const hiddenRooms = rooms.filter((r) => hiddenIds.includes(r.id));
+            if (hiddenRooms.length === 0) {
+              return <div>No hidden rooms</div>;
+            }
+            return hiddenRooms.map((room) => (
+              <div key={room.id} className="flex items-center justify-between gap-2">
+                <span className="truncate">{room.title}</span>
+                <button
+                  type="button"
+                  className="text-[10px] text-slate-500 hover:text-slate-300"
+                  onClick={() => {
+                    const hidden = settings.webexHiddenRooms || [];
+                    updateWebexHiddenRooms(hidden.filter((id) => id !== room.id));
+                  }}
+                >
+                  Unhide
+                </button>
+              </div>
+            ));
+          })()}
+        </div>
+      )}
 
       {/* Content */}
       {view === 'rooms' ? renderRooms() : renderMessages()}

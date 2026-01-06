@@ -122,6 +122,7 @@ export interface DashboardSettings {
   panelPositions?: PanelPositions;
   panelSizes?: PanelSizes;
   webexLastOpened?: Record<string, string>; // roomId → ISO timestamp for unread tracking
+  webexHiddenRooms?: string[];
 }
 
 // Feed item

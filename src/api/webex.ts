@@ -61,9 +61,10 @@ function authHeaders(apiToken: string): HeadersInit {
 /**
  * Fetch the most recent rooms (up to 10), sorted by last activity descending
  */
+
 export async function fetchRecentRooms(apiToken: string): Promise<WebexRoom[]> {
   const params = new URLSearchParams({
-    max: '10',
+    max: '20',
     sortBy: 'lastactivity',
   });
 
