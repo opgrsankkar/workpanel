@@ -58,7 +58,7 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
   return (
     <Draggable
       nodeRef={nodeRef}
-      handle=".draggable-handle"
+      handle=".panel-header, .panel-edge-handle"
       bounds="parent"
       position={position}
       onStop={handleStop}
@@ -66,13 +66,9 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
       <div ref={nodeRef} className="absolute">
         <ResizableBox {...resizableProps}>
           <div className="relative h-full w-full">
-            <button
-              type="button"
-              className="draggable-handle absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-slate-800/80 border border-slate-600 text-slate-400 hover:text-white flex items-center justify-center cursor-move"
-              aria-label="Drag panel"
-            >
-              ⤧
-            </button>
+            <div className="panel-edge-handle panel-edge-handle-left" />
+            <div className="panel-edge-handle panel-edge-handle-right" />
+            <div className="panel-edge-handle panel-edge-handle-bottom" />
             {children}
           </div>
         </ResizableBox>
