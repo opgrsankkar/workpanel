@@ -211,14 +211,14 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
 
   return (
     <div className="panel h-full flex flex-col p-0 overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-panel-border bg-slate-800/50">
+      {/* Header (drag handle) with tabs */}
+      <div className="panel-header flex items-center justify-between px-2 py-1 gap-2">
         <div className="flex items-center gap-2 overflow-x-auto">
           {notes.map((note) => (
             <button
               key={note.name}
               onClick={() => openNote(note)}
-              className={`px-2 py-1 text-xs rounded whitespace-nowrap flex items-center gap-1 ${
+              className={`px-2 py-0.5 text-xs rounded whitespace-nowrap flex items-center gap-1 ${
                 activeNote?.name === note.name
                   ? 'bg-accent text-white'
                   : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -230,15 +230,15 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
               )}
             </button>
           ))}
-          
+
           <button
             onClick={handleCreateNote}
-            className="px-2 py-1 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 rounded"
+            className="px-2 py-0.5 text-xs bg-slate-700 text-slate-300 hover:bg-slate-600 rounded"
           >
             + New
           </button>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {activeNote && (
             <button

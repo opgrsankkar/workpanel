@@ -43,6 +43,34 @@ body {
 
 .panel-header {
   @apply text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3;
+  cursor: move;
+}
+
+.panel-edge-handle {
+  position: absolute;
+  z-index: 10;
+  cursor: move;
+}
+
+.panel-edge-handle-left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+}
+
+.panel-edge-handle-right {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+}
+
+.panel-edge-handle-bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
 }
 
 /* Button variants */
