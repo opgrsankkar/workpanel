@@ -30,6 +30,49 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
   const monacoRef = useRef<unknown>(null);
   const filePickerRef = useRef<HTMLDivElement>(null);
 
+  const sanitizeFilename = (title: string) => {
+    // Replace characters that are not allowed in filenames on common filesystems
+    const invalidChars = /[\\/:*?"<>|]/g;
+    const sanitized = title.trim().replace(invalidChars, '_');
+    return sanitized || 'untitled';
+  };
+
+  const maybeRenameActiveNoteFromContent = async (currentContent: string) => {
+    if (!dirHandle || !activeNote) return;
+
+    const firstLine = currentContent.split(/\r?\n/)[0]?.trim();
+    if (!firstLine || !firstLine.startsWith('# ')) return;
+
+    const rawTitle = firstLine.slice(2).trim();
+    if (!rawTitle) return;
+
+    const baseName = sanitizeFilename(rawTitle);
+    const newName = baseName.endsWith('.md') ? baseName : `${baseName}.md`;
+
+    // Enforce max length
+    if (newName.length > 250) return;
+
+    // No-op if name is unchanged
+    if (newName === activeNote.name) return;
+
+    // Avoid clashing with another existing note name
+    if (notes.some((note) => note.name === newName && note.name !== activeNote.name)) return;
+
+    try {
+      const newHandle = await dirHandle.getFileHandle(newName, { create: true });
+      await writeNote(newHandle, currentContent);
+      await deleteNote(dirHandle, activeNote.name);
+
+      const updatedNote: NoteFile = { name: newName, handle: newHandle };
+
+      setNotes((prev) => prev.map((n) => (n.name === activeNote.name ? updatedNote : n)));
+      setOpenNotes((prev) => prev.map((n) => (n.name === activeNote.name ? updatedNote : n)));
+      setActiveNote(updatedNote);
+    } catch (err) {
+      console.error('Failed to rename note based on title:', err);
+    }
+  };
+
   // Initialize folder
   useEffect(() => {
     const init = async () => {
@@ -161,6 +204,7 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     
     try {
       await writeNote(activeNote.handle, content);
+      await maybeRenameActiveNoteFromContent(content);
       setIsDirty(false);
     } catch (err) {
       console.error('Failed to save note:', err);
@@ -180,6 +224,7 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
       if (activeNote) {
         try {
           await writeNote(activeNote.handle, value);
+          await maybeRenameActiveNoteFromContent(value);
           setIsDirty(false);
         } catch (err) {
           console.error('Auto-save failed:', err);
@@ -209,7 +254,7 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     }
   };
 
-  const generateNoteFilename = () => {
+  const generateNoteFilename = (existingNames: string[]) => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -217,13 +262,27 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     const year = now.getFullYear();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${day}-${month}-${year}_${hours}-${minutes}_note.md`;
+    const baseName = `${day}-${month}-${year}_${hours}-${minutes}_note.md`;
+
+    if (!existingNames.includes(baseName)) {
+      return baseName;
+    }
+
+    // If a note with this timestamp already exists, prefix with an incrementing counter
+    let counter = 2;
+    // e.g., 2_21-Jan-2026_10-15_note.md, 3_21-Jan-2026_10-15_note.md, etc.
+    // This avoids overwriting and keeps all files grouped by timestamp.
+    while (existingNames.includes(`${counter}_${baseName}`)) {
+      counter += 1;
+    }
+
+    return `${counter}_${baseName}`;
   };
 
   const handleCreateNote = async () => {
     if (!dirHandle) return;
 
-    const filename = generateNoteFilename();
+    const filename = generateNoteFilename(notes.map((n) => n.name));
     try {
       const handle = await createNote(dirHandle, filename);
       await refreshNotes();
@@ -236,39 +295,59 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     }
   };
 
-  const handleDeleteNote = async (note: NoteFile) => {
-    if (!dirHandle) return;
-    if (!confirm(`Delete "${note.name}"?`)) return;
+  const handleCleanFolder = async () => {
+    if (!dirHandle || notes.length === 0) return;
 
     try {
-      await deleteNote(dirHandle, note.name);
-      
-      // Remove from open notes if open
-      setOpenNotes(prev => prev.filter(n => n.name !== note.name));
-      
-      await refreshNotes();
-      
-      if (activeNote?.name === note.name) {
-        // Switch to another open note or clear
-        setOpenNotes(prev => {
-          if (prev.length > 0) {
-            const nextNote = prev[0];
-            readNote(nextNote.handle).then(text => {
-              setActiveNote(nextNote);
-              setContent(text);
-              setIsDirty(false);
-            }).catch(err => {
-              console.error('Failed to open next note:', err);
-            });
+      const emptyNotes: NoteFile[] = [];
+
+      for (const note of notes) {
+        const text = await readNote(note.handle);
+        // Only delete files with no content at all
+        if (text.length === 0) {
+          emptyNotes.push(note);
+        }
+      }
+
+      if (emptyNotes.length === 0) {
+        return;
+      }
+
+      const namesToDelete = new Set(emptyNotes.map((n) => n.name));
+
+      for (const note of emptyNotes) {
+        await deleteNote(dirHandle, note.name);
+      }
+
+      // Update open notes and active note locally
+      setOpenNotes((prev) => {
+        const remaining = prev.filter((n) => !namesToDelete.has(n.name));
+
+        if (activeNote && namesToDelete.has(activeNote.name)) {
+          if (remaining.length > 0) {
+            const nextNote = remaining[0];
+            readNote(nextNote.handle)
+              .then((text) => {
+                setActiveNote(nextNote);
+                setContent(text);
+                setIsDirty(false);
+              })
+              .catch((err) => {
+                console.error('Failed to open next note after clean:', err);
+              });
           } else {
             setActiveNote(null);
             setContent('');
+            setIsDirty(false);
           }
-          return prev;
-        });
-      }
+        }
+
+        return remaining;
+      });
+
+      await refreshNotes();
     } catch (err) {
-      console.error('Failed to delete note:', err);
+      console.error('Failed to clean empty notes:', err);
     }
   };
 
@@ -392,14 +471,13 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
             New
           </button>
 
-          {activeNote && (
-            <button
-              onClick={() => handleDeleteNote(activeNote)}
-              className="text-xs text-slate-400 hover:text-danger"
-            >
-              Delete
-            </button>
-          )}
+          <button
+            onClick={handleCleanFolder}
+            className="text-xs text-slate-400 hover:text-danger"
+            title="Delete all empty notes in this folder"
+          >
+            Clean
+          </button>
           <button
             onClick={handlePickFolder}
             className="text-xs text-slate-400 hover:text-white"
