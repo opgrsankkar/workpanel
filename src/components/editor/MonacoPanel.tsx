@@ -11,7 +11,7 @@ import {
   deleteNote,
 } from '../../utils/fileSystem';
 
-type NoteFile = { name: string; handle: FileSystemFileHandle };
+type NoteFile = { name: string; handle: FileSystemFileHandle; lastModified?: number };
 
 interface MonacoPanelProps {
   editorRef?: React.MutableRefObject<unknown>;
@@ -351,10 +351,10 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     }
   };
 
-  // Get files that are in folder but not currently open
-  const closedNotes = notes.filter(
-    note => !openNotes.some(openNote => openNote.name === note.name)
-  );
+  // Get files that are in folder but not currently open, sorted by last touched (desc)
+  const closedNotes = [...notes]
+    .filter((note) => !openNotes.some((openNote) => openNote.name === note.name))
+    .sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
 
   const handleEditorMount = (editor: unknown) => {
     monacoRef.current = editor;

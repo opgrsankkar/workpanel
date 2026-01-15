@@ -115,15 +115,17 @@ export async function getNotesFolder(): Promise<FileSystemDirectoryHandle | null
 // List all files in the notes folder
 export async function listNotes(
   dirHandle: FileSystemDirectoryHandle
-): Promise<{ name: string; handle: FileSystemFileHandle }[]> {
-  const files: { name: string; handle: FileSystemFileHandle }[] = [];
-  
+): Promise<{ name: string; handle: FileSystemFileHandle; lastModified: number }[]> {
+  const files: { name: string; handle: FileSystemFileHandle; lastModified: number }[] = [];
+
   for await (const [name, handle] of dirHandle.entries()) {
     if (handle.kind === 'file' && (name.endsWith('.md') || name.endsWith('.txt'))) {
-      files.push({ name, handle: handle as FileSystemFileHandle });
+      const file = await (handle as FileSystemFileHandle).getFile();
+      files.push({ name, handle: handle as FileSystemFileHandle, lastModified: file.lastModified });
     }
   }
-  
+
+  // Keep default list sorted by name for callers that show full list
   return files.sort((a, b) => a.name.localeCompare(b.name));
 }
 
