@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useVault } from '../../state/VaultContext';
 import { useSettings } from '../../state/SettingsContext';
+import {
+  buildSettingsTransferBundle,
+  parseSettingsTransferBundle,
+} from '../../state/settings';
+import type { EncryptedPayload } from '../../utils/secureVault';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -8,8 +13,23 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
-  const { getToken, setServiceToken, clearServiceToken, clearVault } = useVault();
-  const { settings, resetPanelLayout } = useSettings();
+  const {
+    getToken,
+    setServiceToken,
+    clearServiceToken,
+    clearVault,
+    exportVaultPayload,
+    importVaultPayload,
+  } = useVault();
+  const {
+    settings,
+    resetPanelLayout,
+    applyViewportLayout,
+    deleteViewportLayout,
+    replaceAllSettings,
+    activeViewportLayoutKey,
+  } = useSettings();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   // Todoist state
   const [todoistToken, setTodoistToken] = useState('');
@@ -22,6 +42,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const [hasWebexToken, setHasWebexToken] = useState(false);
   const [savingWebex, setSavingWebex] = useState(false);
   const [webexError, setWebexError] = useState<string | null>(null);
+  const [transferStatus, setTransferStatus] = useState<string | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -36,6 +58,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     setHasWebexToken(!!currentWebex);
     setWebexToken('');
     setWebexError(null);
+    setTransferStatus(null);
+    setTransferError(null);
   }, [open, getToken]);
 
   if (!open) return null;
@@ -116,6 +140,60 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     clearVault();
     onClose();
   };
+
+  const handleExportSettings = () => {
+    try {
+      setTransferError(null);
+      const bundle = buildSettingsTransferBundle(exportVaultPayload());
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateSuffix = new Date().toISOString().replace(/[:.]/g, '-');
+      link.href = url;
+      link.download = `dashboard-settings-${dateSuffix}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setTransferStatus('Settings exported successfully.');
+    } catch (error) {
+      console.error('Failed to export settings:', error);
+      setTransferError('Failed to export settings');
+    }
+  };
+
+  const handleImportSettingsClick = () => {
+    setTransferError(null);
+    importInputRef.current?.click();
+  };
+
+  const handleImportSettings = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const content = await file.text();
+      const parsed = parseSettingsTransferBundle(content);
+      replaceAllSettings(parsed.settings);
+
+      if (Object.prototype.hasOwnProperty.call(parsed, 'vaultPayload')) {
+        importVaultPayload((parsed.vaultPayload ?? null) as EncryptedPayload | null);
+      }
+
+      setTransferError(null);
+      setTransferStatus('Settings imported. If credentials were included, unlock with your existing dashboard password.');
+    } catch (error) {
+      console.error('Failed to import settings:', error);
+      setTransferStatus(null);
+      setTransferError('Invalid settings file');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const savedViewportLayouts = Object.entries(settings.viewportLayouts || {}).sort((a, b) => {
+    const dateA = new Date(a[1].updatedAt).getTime();
+    const dateB = new Date(b[1].updatedAt).getTime();
+    return dateB - dateA;
+  });
 
   return (
     <div
@@ -261,6 +339,44 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             </button>
           </section>
 
+          {/* Backup */}
+          <section>
+            <h3 className="text-xs text-slate-400 uppercase tracking-wide mb-2">
+              Backup
+            </h3>
+            <p className="text-[11px] text-slate-500 mb-2">
+              Export or import all local dashboard settings offline, including encrypted credentials.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn btn-secondary text-xs"
+                onClick={handleExportSettings}
+              >
+                Export all settings
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary text-xs"
+                onClick={handleImportSettingsClick}
+              >
+                Import settings
+              </button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={handleImportSettings}
+              />
+            </div>
+            {transferStatus && <p className="text-[11px] text-slate-400 mt-2">{transferStatus}</p>}
+            {transferError && <p className="text-[11px] text-danger mt-2">{transferError}</p>}
+            <p className="text-[11px] text-slate-500 mt-2">
+              Imports and exports use local files only. No online sync is used.
+            </p>
+          </section>
+
           {/* Layout */}
           <section>
             <h3 className="text-xs text-slate-400 uppercase tracking-wide mb-2">
@@ -276,6 +392,59 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
             >
               Reset panel layout
             </button>
+
+            <div className="mt-4">
+              <h4 className="text-[11px] text-slate-400 uppercase tracking-wide mb-2">
+                Saved resolutions
+              </h4>
+              {savedViewportLayouts.length === 0 ? (
+                <p className="text-[11px] text-slate-500">
+                  No saved layouts yet. Move or resize a panel to save one for your current window size.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {savedViewportLayouts.map(([key, layout]) => {
+                    const isActive = activeViewportLayoutKey === key;
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between rounded border border-panel-border px-2 py-1"
+                      >
+                        <div>
+                          <p className="text-xs text-slate-200">
+                            {layout.viewportWidth}×{layout.viewportHeight}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {new Date(layout.updatedAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className={`btn text-xs ${isActive ? 'btn-secondary' : 'btn-primary'}`}
+                            onClick={() => applyViewportLayout(key)}
+                          >
+                            {isActive ? 'Active' : 'Apply'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost text-xs text-danger disabled:opacity-50"
+                            onClick={() => deleteViewportLayout(key)}
+                            disabled={isActive}
+                            title={isActive ? 'Active layout cannot be deleted' : 'Delete this saved layout'}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-slate-500 mt-2">
+                Selected layout stays active until you choose another one or resize the window.
+              </p>
+            </div>
           </section>
         </div>
       </div>
