@@ -80,13 +80,13 @@ npm run build
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Alt+P` | Start/Stop Pomodoro |
-| `Alt+T` | Add new task |
-| `Alt+E` | Focus Monaco editor |
-| `Alt+F` | Toggle news feeds |
-| `Alt+M` | Toggle focus mode |
+| Shortcut | Action              |
+| -------- | ------------------- |
+| `Alt+P`  | Start/Stop Pomodoro |
+| `Alt+T`  | Add new task        |
+| `Alt+E`  | Focus Monaco editor |
+| `Alt+F`  | Toggle news feeds   |
+| `Alt+M`  | Toggle focus mode   |
 
 ## Browser Compatibility
 
