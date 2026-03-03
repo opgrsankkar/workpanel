@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { EncryptedPayload, encryptData, decryptData } from '../utils/secureVault';
 
 type VaultTokens = Record<string, string>;
@@ -14,9 +14,11 @@ interface VaultContextValue {
   lock: () => void;
   getToken: (serviceId: string) => string | null;
   clearVault: () => void;
+  exportVaultPayload: () => EncryptedPayload | null;
+  importVaultPayload: (payload: EncryptedPayload | null) => void;
 }
 
-const VAULT_STORAGE_KEY = 'dashboard.vault';
+export const VAULT_STORAGE_KEY = 'dashboard.vault';
 
 const VaultContext = createContext<VaultContextValue | null>(null);
 
@@ -103,6 +105,50 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setPassword(null);
   }, []);
 
+  const exportVaultPayload = useCallback(() => {
+    return encrypted;
+  }, [encrypted]);
+
+  const importVaultPayload = useCallback((payload: EncryptedPayload | null) => {
+    if (!payload) {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(VAULT_STORAGE_KEY);
+      }
+      setEncrypted(null);
+      setTokens(null);
+      setPassword(null);
+      return;
+    }
+
+    if (!payload || payload.version !== 1) {
+      throw new Error('Unsupported vault payload version');
+    }
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(payload));
+    }
+    setEncrypted(payload);
+    setTokens(null);
+    setPassword(null);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== VAULT_STORAGE_KEY) return;
+      const latest = loadStoredVault();
+      setEncrypted(latest);
+      setTokens(null);
+      setPassword(null);
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const getToken = useCallback(
     (serviceId: string) => {
       if (!tokens) return null;
@@ -154,6 +200,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     lock,
     getToken,
     clearVault,
+    exportVaultPayload,
+    importVaultPayload,
   };
 
   return <VaultContext.Provider value={value}>{children}</VaultContext.Provider>;

@@ -113,7 +113,22 @@ export interface PanelSize {
 
 export type PanelSizes = Partial<Record<PanelId, PanelSize>>;
 
+export interface ViewportLayout {
+  viewportWidth: number;
+  viewportHeight: number;
+  devicePixelRatio?: number;
+  screenWidth?: number;
+  screenHeight?: number;
+  visualScale?: number;
+  panelPositions: PanelPositions;
+  panelSizes: PanelSizes;
+  updatedAt: string;
+}
+
+export type ViewportLayouts = Record<string, ViewportLayout>;
+
 export interface DashboardSettings {
+  settingsVersion?: number;
   timezones: TimezoneConfig[];
   feedVisibility: FeedVisibility;
   focusModeEnabled: boolean;
@@ -121,6 +136,7 @@ export interface DashboardSettings {
   todayIntention: string;
   panelPositions?: PanelPositions;
   panelSizes?: PanelSizes;
+  viewportLayouts?: ViewportLayouts;
   webexLastOpened?: Record<string, string>; // roomId → ISO timestamp for unread tracking
   webexHiddenRooms?: string[];
 }

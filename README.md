@@ -57,7 +57,19 @@ When you first use the Monaco editor, you'll be prompted to select a folder for 
 - **Notes**: Local file system via File System Access API
 - **Pomodoro & Interrupt Logs**: IndexedDB (persisted locally)
 - **Settings & Layout**: LocalStorage (timezones, shortcuts, panel positions/sizes, feed visibility, focus mode)
+- **Settings Backup**: Offline JSON export/import from Settings panel (includes encrypted vault payload)
 - **Tasks**: Fetched directly from the Todoist REST API from the browser (no local caching, no backend proxy)
+
+## Layout Reliability Checklist
+
+Use this checklist when validating layout behavior changes:
+
+- Drag and resize multiple panels quickly; verify final positions/sizes persist correctly.
+- Resize the window rapidly across several sizes and confirm closest saved layout selection is stable.
+- Test browser zoom changes (80%, 100%, 125%) and verify expected layout matching.
+- Move the window across monitors with different scaling and confirm panels remain on-screen.
+- Open a second tab and change settings/layout in both tabs; verify cross-tab updates converge.
+- Export settings, clear local data, import settings, and verify layout + encrypted credentials restore.
 
 ### Building for Production
 
