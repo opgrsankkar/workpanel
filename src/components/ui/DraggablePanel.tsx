@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useRef } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 import { ResizableBox, ResizableBoxProps } from 'react-resizable';
 import { useSettings } from '../../state/SettingsContext';
@@ -14,6 +14,25 @@ interface DraggablePanelProps {
 export function DraggablePanel({ panelId, children, className }: DraggablePanelProps) {
   const { settings, updatePanelPosition, updatePanelSize } = useSettings();
   const nodeRef = useRef<HTMLDivElement | null>(null);
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1920,
+    height: typeof window !== 'undefined' ? window.innerHeight : 1080,
+  }));
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateViewportSize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    updateViewportSize();
+    window.addEventListener('resize', updateViewportSize);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportSize);
+    };
+  }, []);
 
   const position = useMemo(() => {
     const positions = settings.panelPositions || {};
@@ -33,6 +52,13 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
     return { width: size.width, height: size.height };
   }, [panelId, size.width, size.height]);
 
+  const maxSize = useMemo(() => {
+    return {
+      width: Math.max(minSize.width, viewportSize.width),
+      height: Math.max(minSize.height, viewportSize.height),
+    };
+  }, [minSize.height, minSize.width, viewportSize.height, viewportSize.width]);
+
   const handleStop = (_e: DraggableEvent, data: DraggableData) => {
     updatePanelPosition(panelId, { x: data.x, y: data.y });
   };
@@ -43,7 +69,7 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
     width: size.width,
     height: size.height,
     minConstraints: [minSize.width, minSize.height],
-    maxConstraints: [1200, 900],
+    maxConstraints: [maxSize.width, maxSize.height],
     resizeHandles: ['se'],
     onResizeStop: (_e, data) => {
       updatePanelSize(panelId, {
