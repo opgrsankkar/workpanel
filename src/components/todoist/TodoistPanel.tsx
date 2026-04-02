@@ -5,6 +5,7 @@ import { fetchTasks, completeTask, createTask, categorizeTasks } from '../../api
 import { TaskCompletionRepository } from '../../db';
 import { getDateKey } from '../../utils/dateUtils';
 import { useVault } from '../../state/VaultContext';
+import { TodoistMarkdown } from './TodoistMarkdown';
 
 interface TodoistPanelProps {
   onTaskSelect: (task: TodoistTask) => void;
@@ -41,7 +42,10 @@ function TaskItem({
         className="w-4 h-4 mt-0.5 rounded-full border-2 border-slate-400 hover:border-success hover:bg-success/20 flex-shrink-0"
       />
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onSelect}>
-        <p className="text-sm text-slate-200 break-words">{task.content}</p>
+        <TodoistMarkdown
+          content={task.content}
+          className="text-sm text-slate-200 break-words"
+        />
         {task.due && (
           <p className="text-xs text-slate-500 mt-1">
             {task.due.string}

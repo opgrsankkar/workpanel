@@ -1,4 +1,5 @@
 import { TodoistTask } from '../../types';
+import { TodoistMarkdown } from '../todoist/TodoistMarkdown';
 
 interface TaskSelectorModalProps {
   tasks: TodoistTask[];
@@ -39,7 +40,10 @@ export function TaskSelectorModal({
                 }}
                 className="w-full text-left p-3 rounded bg-slate-700/50 hover:bg-slate-700 transition-colors"
               >
-                <p className="text-sm text-slate-200">{task.content}</p>
+                <TodoistMarkdown
+                  content={task.content}
+                  className="text-sm text-slate-200 break-words"
+                />
                 {task.due && (
                   <p className="text-xs text-slate-500 mt-1">
                     {task.due.string}

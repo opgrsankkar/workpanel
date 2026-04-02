@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { PomodoroSession, TodoistTask } from '../../types';
 import { PomodoroRepository } from '../../db';
 import { getDateKey, formatTimerDisplay } from '../../utils/dateUtils';
+import { TodoistMarkdown } from '../todoist/TodoistMarkdown';
 
 interface PomodoroTimerProps {
   attachedTask: TodoistTask | null;
@@ -219,8 +220,11 @@ export function PomodoroTimer({
       {/* Attached task */}
       {attachedTask && (
         <div className="bg-slate-700/50 rounded p-2 mb-4 text-sm">
-          <span className="text-slate-400">Working on: </span>
-          <span className="text-slate-200">{attachedTask.content}</span>
+          <div className="text-slate-400 mb-1">Working on:</div>
+          <TodoistMarkdown
+            content={attachedTask.content}
+            className="text-slate-200 break-words"
+          />
         </div>
       )}
 
