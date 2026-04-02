@@ -1,5 +1,6 @@
 import { DailySummary } from '../../types';
 import { formatDuration } from '../../utils/dateUtils';
+import { TodoistMarkdown } from '../todoist/TodoistMarkdown';
 
 interface DailySummaryPanelProps {
   summary: DailySummary;
@@ -64,12 +65,13 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
             {summary.completedTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-2 text-sm"
+                className="flex items-start gap-2 text-sm"
               >
                 <span className="text-success">✓</span>
-                <span className="text-slate-300 truncate">
-                  {task.todoistTaskContent}
-                </span>
+                <TodoistMarkdown
+                  content={task.todoistTaskContent}
+                  className="min-w-0 flex-1 text-slate-300 break-words"
+                />
               </div>
             ))}
           </div>
