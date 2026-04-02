@@ -117,7 +117,7 @@ export function InterruptPanel({ interrupts, onInterruptAdded }: InterruptPanelP
       {/* Summary */}
       {interrupts.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-600 text-sm text-slate-400">
-          Total today: <span className="text-white">{interrupts.length}</span> interruption{interrupts.length !== 1 ? 's' : ''}
+          Total today: <span className="text-slate-200">{interrupts.length}</span> interruption{interrupts.length !== 1 ? 's' : ''}
         </div>
       )}
     </div>

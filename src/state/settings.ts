@@ -45,6 +45,12 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
   focusEditor: 'alt+e',
   toggleFeeds: 'alt+f',
   toggleFocusMode: 'alt+m',
+  newNote: 'mod+n',
+  openNoteSearch: 'mod+o',
+  closeActiveNote: 'alt+w',
+  nextNote: 'alt+n',
+  logInterrupt: 'alt+i',
+  refreshTasks: 'alt+r',
 };
 
 const DEFAULT_PANEL_POSITIONS: PanelPositions = {
@@ -252,6 +258,30 @@ function normalizeSettings(raw: unknown): DashboardSettings {
         typeof shortcutsInput.toggleFocusMode === 'string' && shortcutsInput.toggleFocusMode.trim()
           ? shortcutsInput.toggleFocusMode
           : DEFAULT_SHORTCUTS.toggleFocusMode,
+      newNote:
+        typeof shortcutsInput.newNote === 'string' && shortcutsInput.newNote.trim()
+          ? shortcutsInput.newNote
+          : DEFAULT_SHORTCUTS.newNote,
+      openNoteSearch:
+        typeof shortcutsInput.openNoteSearch === 'string' && shortcutsInput.openNoteSearch.trim()
+          ? shortcutsInput.openNoteSearch
+          : DEFAULT_SHORTCUTS.openNoteSearch,
+      closeActiveNote:
+        typeof shortcutsInput.closeActiveNote === 'string' && shortcutsInput.closeActiveNote.trim()
+          ? shortcutsInput.closeActiveNote
+          : DEFAULT_SHORTCUTS.closeActiveNote,
+      nextNote:
+        typeof shortcutsInput.nextNote === 'string' && shortcutsInput.nextNote.trim()
+          ? shortcutsInput.nextNote
+          : DEFAULT_SHORTCUTS.nextNote,
+      logInterrupt:
+        typeof shortcutsInput.logInterrupt === 'string' && shortcutsInput.logInterrupt.trim()
+          ? shortcutsInput.logInterrupt
+          : DEFAULT_SHORTCUTS.logInterrupt,
+      refreshTasks:
+        typeof shortcutsInput.refreshTasks === 'string' && shortcutsInput.refreshTasks.trim()
+          ? shortcutsInput.refreshTasks
+          : DEFAULT_SHORTCUTS.refreshTasks,
     },
     todayIntention: typeof migrated.todayIntention === 'string' ? migrated.todayIntention : '',
     panelPositions: sanitizePanelPositions(migrated.panelPositions),

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   isFileSystemAccessSupported,
@@ -10,6 +10,7 @@ import {
   createNote,
   deleteNote,
 } from '../../utils/fileSystem';
+import { usePrefersDarkMode } from '../../hooks/usePrefersDarkMode';
 
 type NoteFile = { name: string; handle: FileSystemFileHandle; lastModified?: number };
 
@@ -18,6 +19,7 @@ interface MonacoPanelProps {
 }
 
 export function MonacoPanel({ editorRef }: MonacoPanelProps) {
+  const prefersDarkMode = usePrefersDarkMode();
   const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [notes, setNotes] = useState<NoteFile[]>([]); // All files in folder
   const [openNotes, setOpenNotes] = useState<NoteFile[]>([]); // Currently open tabs
@@ -25,10 +27,13 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
   const [content, setContent] = useState('');
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [showOpenSearch, setShowOpenSearch] = useState(false);
+  const [openSearchQuery, setOpenSearchQuery] = useState('');
+  const [highlightedSearchIndex, setHighlightedSearchIndex] = useState(0);
   const saveTimeoutRef = useRef<number | null>(null);
   const monacoRef = useRef<unknown>(null);
-  const filePickerRef = useRef<HTMLDivElement>(null);
+  const openSearchRef = useRef<HTMLDivElement>(null);
+  const openSearchInputRef = useRef<HTMLInputElement>(null);
 
   const sanitizeFilename = (title: string) => {
     // Replace characters that are not allowed in filenames on common filesystems
@@ -104,27 +109,50 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     init();
   }, []);
 
-  // Close file picker when clicking outside
+  // Close quick open when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (filePickerRef.current && !filePickerRef.current.contains(event.target as Node)) {
-        setShowFilePicker(false);
+      if (openSearchRef.current && !openSearchRef.current.contains(event.target as Node)) {
+        setShowOpenSearch(false);
       }
     };
 
-    if (showFilePicker) {
+    if (showOpenSearch) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showFilePicker]);
+  }, [showOpenSearch]);
+
+  useEffect(() => {
+    if (!showOpenSearch) return;
+
+    const focusTimer = window.setTimeout(() => {
+      openSearchInputRef.current?.focus();
+      openSearchInputRef.current?.select();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [showOpenSearch]);
 
   const refreshNotes = useCallback(async () => {
     if (!dirHandle) return;
     const files = await listNotes(dirHandle);
     setNotes(files);
   }, [dirHandle]);
+
+  const openNoteSearch = useCallback(() => {
+    setOpenSearchQuery('');
+    setHighlightedSearchIndex(0);
+    setShowOpenSearch(true);
+  }, []);
+
+  const closeNoteSearch = useCallback(() => {
+    setShowOpenSearch(false);
+    setOpenSearchQuery('');
+    setHighlightedSearchIndex(0);
+  }, []);
 
   const openNote = async (note: NoteFile) => {
     // Save current note first if dirty
@@ -351,10 +379,77 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
     }
   };
 
-  // Get files that are in folder but not currently open, sorted by last touched (desc)
-  const closedNotes = [...notes]
-    .filter((note) => !openNotes.some((openNote) => openNote.name === note.name))
-    .sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
+  const searchableNotes = useMemo(() => {
+    const query = openSearchQuery.trim().toLowerCase();
+
+    return [...notes]
+      .sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0))
+      .filter((note) => !query || note.name.toLowerCase().includes(query));
+  }, [notes, openSearchQuery]);
+
+  useEffect(() => {
+    if (searchableNotes.length === 0) {
+      setHighlightedSearchIndex(0);
+      return;
+    }
+
+    setHighlightedSearchIndex((current) => Math.min(current, searchableNotes.length - 1));
+  }, [searchableNotes.length]);
+
+  const handleCloseActiveNote = useCallback(() => {
+    if (!activeNote) return;
+    void closeNote(activeNote);
+  }, [activeNote]);
+
+  const handleActivateNextNote = useCallback(() => {
+    if (openNotes.length === 0) {
+      if (notes.length > 0) {
+        void openNote(notes[0]);
+      }
+      return;
+    }
+
+    const activeIndex = activeNote ? openNotes.findIndex((note) => note.name === activeNote.name) : -1;
+    const nextIndex = activeIndex >= 0 ? (activeIndex + 1) % openNotes.length : 0;
+    const nextNote = openNotes[nextIndex];
+    if (nextNote) {
+      void openNote(nextNote);
+    }
+  }, [activeNote, notes, openNotes]);
+
+  const handleOpenSearchKeyDown = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeNoteSearch();
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (searchableNotes.length > 0) {
+        setHighlightedSearchIndex((current) => (current + 1) % searchableNotes.length);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (searchableNotes.length > 0) {
+        setHighlightedSearchIndex((current) =>
+          current === 0 ? searchableNotes.length - 1 : current - 1
+        );
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const selectedNote = searchableNotes[highlightedSearchIndex];
+      if (!selectedNote) return;
+      await openNote(selectedNote);
+      closeNoteSearch();
+    }
+  };
 
   const handleEditorMount = (editor: unknown) => {
     monacoRef.current = editor;
@@ -430,35 +525,70 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
 
         {/* Controls area - fixed on right */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Open file dropdown */}
-          <div className="relative" ref={filePickerRef}>
+          <div className="relative" ref={openSearchRef}>
             <button
-              onClick={() => setShowFilePicker(!showFilePicker)}
+              onClick={() => {
+                if (showOpenSearch) {
+                  closeNoteSearch();
+                } else {
+                  openNoteSearch();
+                }
+              }}
               className="text-xs text-slate-400 hover:text-white"
-              title="Open file"
+              title="Open file (⌘O)"
+              data-open-note-search-btn
             >
               Open
             </button>
-            {showFilePicker && (
-              <div className="absolute top-full right-0 mt-1 bg-slate-800 border border-slate-600 rounded shadow-lg min-w-48 max-h-64 overflow-y-auto" style={{ zIndex: 9999 }}>
-                {closedNotes.length === 0 ? (
-                  <div className="px-3 py-2 text-xs text-slate-400">
-                    All files are open
-                  </div>
-                ) : (
-                  closedNotes.map((note) => (
-                    <button
-                      key={note.name}
-                      onClick={() => {
-                        openNote(note);
-                        setShowFilePicker(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-xs text-left text-slate-300 hover:bg-slate-700 truncate"
-                    >
-                      {note.name}
-                    </button>
-                  ))
-                )}
+            {showOpenSearch && (
+              <div
+                className="absolute top-full right-0 mt-1 w-72 bg-slate-800 border border-slate-600 rounded shadow-lg overflow-hidden"
+                style={{ zIndex: 9999 }}
+              >
+                <div className="p-2 border-b border-slate-700">
+                  <input
+                    ref={openSearchInputRef}
+                    type="text"
+                    value={openSearchQuery}
+                    onChange={(event) => {
+                      setOpenSearchQuery(event.target.value);
+                      setHighlightedSearchIndex(0);
+                    }}
+                    onKeyDown={handleOpenSearchKeyDown}
+                    placeholder="Search files..."
+                    className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {searchableNotes.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">No matching files</div>
+                  ) : (
+                    searchableNotes.map((note, index) => {
+                      const isActive = activeNote?.name === note.name;
+                      const isOpen = openNotes.some((openNote) => openNote.name === note.name);
+
+                      return (
+                        <button
+                          key={note.name}
+                          onClick={() => {
+                            void openNote(note);
+                            closeNoteSearch();
+                          }}
+                          className={`w-full px-3 py-2 text-left ${
+                            index === highlightedSearchIndex
+                              ? 'bg-slate-700'
+                              : 'bg-transparent hover:bg-slate-700/80'
+                          }`}
+                        >
+                          <div className="truncate text-xs text-slate-200">{note.name}</div>
+                          <div className="mt-0.5 text-[11px] text-slate-500">
+                            {isActive ? 'Active tab' : isOpen ? 'Open tab' : 'Available file'}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -466,10 +596,29 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
           <button
             onClick={handleCreateNote}
             className="text-xs text-slate-400 hover:text-white"
-            title="New note"
+            title="New note (⌘N)"
+            data-new-note-btn
           >
             New
           </button>
+
+          <button
+            type="button"
+            onClick={handleCloseActiveNote}
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+            data-close-active-note-btn
+          />
+
+          <button
+            type="button"
+            onClick={handleActivateNextNote}
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+            data-next-note-btn
+          />
 
           <button
             onClick={handleCleanFolder}
@@ -493,7 +642,7 @@ export function MonacoPanel({ editorRef }: MonacoPanelProps) {
           <Editor
             height="100%"
             defaultLanguage="markdown"
-            theme="vs-dark"
+            theme={prefersDarkMode ? 'vs-dark' : 'vs'}
             value={content}
             onChange={handleContentChange}
             onMount={handleEditorMount}

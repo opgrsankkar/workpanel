@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSettings } from '../../state/SettingsContext';
 import { formatDate, formatTimeOnly } from '../../utils/dateUtils';
 import { TimezoneConfig } from '../../types';
@@ -16,18 +16,63 @@ const COMMON_TIMEZONES = [
   { label: 'Singapore', tz: 'Asia/Singapore' },
 ];
 
-function ClockDisplay({ config, now }: { config: TimezoneConfig; now: Date }) {
+interface ClockDisplayProps {
+  config: TimezoneConfig;
+  now: Date;
+  isMenuOpen: boolean;
+  onToggleMenu: () => void;
+  onTimezoneChange: (tz: string) => void;
+}
+
+function ClockDisplay({
+  config,
+  now,
+  isMenuOpen,
+  onToggleMenu,
+  onTimezoneChange,
+}: ClockDisplayProps) {
   return (
-    <div className="text-center">
-      <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-        {config.label}
-      </div>
-      <div className="text-2xl font-mono font-medium text-white">
+    <div className="relative flex flex-col items-center text-center">
+      <button
+        type="button"
+        onClick={onToggleMenu}
+        className="mb-1 flex w-full items-center justify-center gap-1 text-center text-xs uppercase tracking-wide text-slate-500 hover:text-slate-300"
+      >
+        <span>{config.label}</span>
+        <span className={`text-[10px] transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}>
+          ▾
+        </span>
+      </button>
+
+      {isMenuOpen && (
+        <div
+          className="absolute left-1/2 top-full z-20 mt-1 w-44 -translate-x-1/2 overflow-hidden rounded border border-slate-600 bg-slate-800 shadow-lg"
+          style={{ zIndex: 9999 }}
+        >
+          {COMMON_TIMEZONES.map((option) => {
+            const isSelected = option.tz === config.tz;
+
+            return (
+              <button
+                key={option.tz}
+                type="button"
+                onClick={() => onTimezoneChange(option.tz)}
+                className={`w-full px-3 py-2 text-left ${
+                  isSelected ? 'bg-slate-700' : 'bg-transparent hover:bg-slate-700/80'
+                }`}
+              >
+                <div className="text-xs text-slate-200">{option.label}</div>
+                <div className="mt-0.5 text-[11px] text-slate-500">{option.tz}</div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="text-2xl font-mono font-medium text-slate-200">
         {formatTimeOnly(now, config.tz)}
       </div>
-      <div className="text-xs text-slate-400 mt-1">
-        {formatDate(now, config.tz)}
-      </div>
+      <div className="mt-1 text-xs text-slate-400">{formatDate(now, config.tz)}</div>
     </div>
   );
 }
@@ -35,7 +80,8 @@ function ClockDisplay({ config, now }: { config: TimezoneConfig; now: Date }) {
 export function MultiClockPanel() {
   const { settings, updateTimezones } = useSettings();
   const [now, setNow] = useState(new Date());
-  const [isEditing, setIsEditing] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const seconds = now.getSeconds().toString().padStart(2, '0');
 
   useEffect(() => {
@@ -45,52 +91,52 @@ export function MultiClockPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!openMenuId) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMenuId]);
+
   const handleTimezoneChange = (index: number, tz: string) => {
-    const selected = COMMON_TIMEZONES.find(t => t.tz === tz);
+    const selected = COMMON_TIMEZONES.find((timezone) => timezone.tz === tz);
     if (!selected) return;
 
-    const newTimezones = [...settings.timezones];
-    newTimezones[index] = {
-      id: newTimezones[index].id,
+    const nextTimezones = [...settings.timezones];
+    nextTimezones[index] = {
+      id: nextTimezones[index].id,
       label: selected.label,
       tz: selected.tz,
     };
-    updateTimezones(newTimezones);
+
+    updateTimezones(nextTimezones);
+    setOpenMenuId(null);
   };
 
   return (
-    <div className="panel h-full">
-      <div className="flex items-center justify-between mb-3">
+    <div className="panel relative z-10 h-full overflow-visible" ref={panelRef}>
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="panel-header mb-0">World Clock :{seconds}</h2>
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="btn btn-ghost text-xs"
-        >
-          {isEditing ? 'Done' : 'Edit'}
-        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {settings.timezones.map((tz, index) => (
-          <div key={tz.id}>
-            {isEditing ? (
-              <div>
-                <select
-                  value={tz.tz}
-                  onChange={(e) => handleTimezoneChange(index, e.target.value)}
-                  className="input text-xs py-1"
-                >
-                  {COMMON_TIMEZONES.map((opt) => (
-                    <option key={opt.tz} value={opt.tz}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <ClockDisplay config={tz} now={now} />
-            )}
-          </div>
+        {settings.timezones.map((timezone, index) => (
+          <ClockDisplay
+            key={timezone.id}
+            config={timezone}
+            now={now}
+            isMenuOpen={openMenuId === timezone.id}
+            onToggleMenu={() =>
+              setOpenMenuId((current) => (current === timezone.id ? null : timezone.id))
+            }
+            onTimezoneChange={(tz) => handleTimezoneChange(index, tz)}
+          />
         ))}
       </div>
     </div>

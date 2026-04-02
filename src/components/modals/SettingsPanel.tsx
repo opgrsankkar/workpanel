@@ -205,7 +205,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Settings</h2>
+          <h2 className="text-lg font-semibold text-slate-200">Settings</h2>
           <button onClick={onClose} className="btn btn-ghost text-xs">
             Close
           </button>

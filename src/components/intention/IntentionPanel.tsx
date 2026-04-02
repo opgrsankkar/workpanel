@@ -56,7 +56,7 @@ export function IntentionPanel() {
           className="flex-1 flex items-center cursor-pointer hover:bg-slate-700/50 rounded p-2 transition-colors"
         >
           {intention ? (
-            <p className="text-xl font-medium text-white leading-relaxed">
+            <p className="text-xl font-medium text-slate-200 leading-relaxed">
               {intention}
             </p>
           ) : (

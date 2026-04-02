@@ -20,7 +20,7 @@ export function TaskSelectorModal({
         className="bg-panel-bg border border-panel-border rounded-lg p-4 w-full max-w-md max-h-[60vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-white mb-4">
+        <h2 className="text-lg font-semibold text-slate-200 mb-4">
           Select Task for Pomodoro
         </h2>
 

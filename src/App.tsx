@@ -157,11 +157,47 @@ function DashboardContent() {
     }
   }, []);
 
+  const handleNewNote = useCallback(() => {
+    const newNoteBtn = document.querySelector('[data-new-note-btn]') as HTMLButtonElement | null;
+    if (newNoteBtn) newNoteBtn.click();
+  }, []);
+
+  const handleOpenNoteSearch = useCallback(() => {
+    const openNoteBtn = document.querySelector('[data-open-note-search-btn]') as HTMLButtonElement | null;
+    if (openNoteBtn) openNoteBtn.click();
+  }, []);
+
+  const handleCloseActiveNote = useCallback(() => {
+    const closeNoteBtn = document.querySelector('[data-close-active-note-btn]') as HTMLButtonElement | null;
+    if (closeNoteBtn) closeNoteBtn.click();
+  }, []);
+
+  const handleNextNote = useCallback(() => {
+    const nextNoteBtn = document.querySelector('[data-next-note-btn]') as HTMLButtonElement | null;
+    if (nextNoteBtn) nextNoteBtn.click();
+  }, []);
+
+  const handleLogInterrupt = useCallback(() => {
+    const interruptBtn = document.querySelector('[data-interrupt-quick]') as HTMLButtonElement | null;
+    if (interruptBtn) interruptBtn.click();
+  }, []);
+
+  const handleRefreshTasks = useCallback(() => {
+    const refreshTasksBtn = document.querySelector('[data-refresh-tasks-btn]') as HTMLButtonElement | null;
+    if (refreshTasksBtn) refreshTasksBtn.click();
+  }, []);
+
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
     onStartStopPomodoro: handleStartStopPomodoro,
     onAddTask: handleAddTask,
     onFocusEditor: handleFocusEditor,
+    onNewNote: handleNewNote,
+    onOpenNoteSearch: handleOpenNoteSearch,
+    onCloseActiveNote: handleCloseActiveNote,
+    onNextNote: handleNextNote,
+    onLogInterrupt: handleLogInterrupt,
+    onRefreshTasks: handleRefreshTasks,
   });
 
   return (
@@ -184,7 +220,7 @@ function DashboardContent() {
           <IntentionPanel />
         </DraggablePanel>
 
-        <DraggablePanel panelId="clocks" className="w-72">
+        <DraggablePanel panelId="clocks" className="w-72 z-30">
           <MultiClockPanel />
         </DraggablePanel>
 

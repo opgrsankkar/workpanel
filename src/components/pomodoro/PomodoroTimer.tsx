@@ -185,7 +185,7 @@ export function PomodoroTimer({
       <div className="relative flex items-center justify-center mb-4">
         <div
           className={`text-5xl font-mono font-bold ${
-            isBreak ? 'text-success' : isRunning ? 'text-accent' : 'text-white'
+            isBreak ? 'text-success' : isRunning ? 'text-accent' : 'text-slate-200'
           }`}
         >
           {formatTimerDisplay(secondsRemaining)}
@@ -220,7 +220,7 @@ export function PomodoroTimer({
       {attachedTask && (
         <div className="bg-slate-700/50 rounded p-2 mb-4 text-sm">
           <span className="text-slate-400">Working on: </span>
-          <span className="text-white">{attachedTask.content}</span>
+          <span className="text-slate-200">{attachedTask.content}</span>
         </div>
       )}
 

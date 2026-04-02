@@ -10,6 +10,12 @@ export function ShortcutsHelp() {
     { label: 'Focus Editor', key: shortcuts.focusEditor },
     { label: 'Toggle Feeds', key: shortcuts.toggleFeeds },
     { label: 'Focus Mode', key: shortcuts.toggleFocusMode },
+    { label: 'New Note', key: shortcuts.newNote },
+    { label: 'Open Note Search', key: shortcuts.openNoteSearch },
+    { label: 'Close Active Note', key: shortcuts.closeActiveNote },
+    { label: 'Next Note', key: shortcuts.nextNote },
+    { label: 'Log Interrupt', key: shortcuts.logInterrupt },
+    { label: 'Refresh Tasks', key: shortcuts.refreshTasks },
   ];
 
   return (

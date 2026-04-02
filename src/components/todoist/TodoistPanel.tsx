@@ -176,7 +176,7 @@ export function TodoistPanel({
       <div className="flex items-center justify-between mb-3">
         <h2 className="panel-header mb-0">Tasks</h2>
         <div className="flex gap-2">
-          <button onClick={loadTasks} className="btn btn-ghost text-xs">
+          <button onClick={loadTasks} className="btn btn-ghost text-xs" data-refresh-tasks-btn>
             ↻
           </button>
           <button

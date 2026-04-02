@@ -86,6 +86,12 @@ export interface ShortcutConfig {
   focusEditor: string;
   toggleFeeds: string;
   toggleFocusMode: string;
+  newNote: string;
+  openNoteSearch: string;
+  closeActiveNote: string;
+  nextNote: string;
+  logInterrupt: string;
+  refreshTasks: string;
 }
 
 export type PanelId =

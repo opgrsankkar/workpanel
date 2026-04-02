@@ -63,7 +63,7 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
     updatePanelPosition(panelId, { x: data.x, y: data.y });
   };
 
-  const mergedClassName = ['relative', className].filter(Boolean).join(' ');
+  const wrapperClassName = ['absolute', className].filter(Boolean).join(' ');
 
   const resizableProps: ResizableBoxProps = {
     width: size.width,
@@ -77,7 +77,7 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
         height: data.size.height,
       });
     },
-    className: mergedClassName,
+    className: 'relative',
     handleSize: [12, 12],
   };
 
@@ -89,7 +89,7 @@ export function DraggablePanel({ panelId, children, className }: DraggablePanelP
       position={position}
       onStop={handleStop}
     >
-      <div ref={nodeRef} className="absolute">
+      <div ref={nodeRef} className={wrapperClassName}>
         <ResizableBox {...resizableProps}>
           <div className="relative h-full w-full">
             <div className="panel-edge-handle panel-edge-handle-left" />
